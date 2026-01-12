@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - LearnAI{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="container">
+        <div class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="auth-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                            <polyline points="10 17 15 12 10 7" />
+                            <line x1="15" y1="12" x2="3" y2="12" />
+                        </svg>
+                    </div>
+                    <h1>Welcome Back</h1>
+                    <p>Sign in to continue your learning journey</p>
+                </div>
+
+                <form method="post" class="auth-form">
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-error">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg>
+                        <span>Invalid email or password. Please try again.</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label for="id_username">Email Address</label>
+                        {{ form.username }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_password">Password</label>
+                        {{ form.password }}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Sign In
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Don't have an account? <a href="{% url 'accounts:register' %}">Create one</a></p>
+                </div>
+            </div>
+
+            <div class="auth-decoration">
+                <div class="decoration-circle decoration-1"></div>
+                <div class="decoration-circle decoration-2"></div>
+                <div class="decoration-circle decoration-3"></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-section {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        padding: 6rem 0 3rem;
+    }
+
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        position: relative;
+    }
+
+    .auth-card {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-xl);
+        padding: 3rem;
+        width: 100%;
+        max-width: 440px;
+        backdrop-filter: var(--glass-blur);
+        position: relative;
+        z-index: 10;
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .auth-icon {
+        width: 80px;
+        height: 80px;
+        background: var(--gradient-primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        color: var(--bg-primary);
+        box-shadow: var(--shadow-glow);
+    }
+
+    .auth-header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .auth-header p {
+        color: var(--text-secondary);
+    }
+
+    .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-group label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        font-family: var(--font-primary);
+        font-size: 1rem;
+        transition: all var(--transition-fast);
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .form-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .btn-block {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+
+    .alert {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        margin-bottom: 0.5rem;
+    }
+
+    .alert-error {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #f87171;
+    }
+
+    .auth-footer {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--glass-border);
+        color: var(--text-secondary);
+    }
+
+    .auth-footer a {
+        color: var(--accent-primary);
+        font-weight: 500;
+    }
+
+    .auth-decoration {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .decoration-circle {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.1;
+    }
+
+    .decoration-1 {
+        width: 300px;
+        height: 300px;
+        background: var(--accent-primary);
+        top: -100px;
+        right: -100px;
+    }
+
+    .decoration-2 {
+        width: 200px;
+        height: 200px;
+        border: 2px solid var(--accent-primary);
+        bottom: -50px;
+        left: -50px;
+    }
+
+    .decoration-3 {
+        width: 150px;
+        height: 150px;
+        background: var(--accent-secondary);
+        top: 50%;
+        left: -100px;
+    }
+
+    @media (max-width: 768px) {
+        .auth-card {
+            padding: 2rem;
+        }
+    }
+</style>
+{% endblock %}

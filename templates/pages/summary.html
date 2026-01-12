@@ -1,0 +1,891 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Summary - LearnAI{% endblock %}
+
+{% block content %}
+<section class="summary-section">
+    <div class="container">
+        <!-- Header -->
+        <div class="section-header">
+            <h1>AI <span class="text-gradient">Summary</span></h1>
+            <p>Upload your study materials and get AI-powered summaries. Then generate quizzes, flashcards, and more.
+            </p>
+        </div>
+
+        <div class="summary-layout">
+            <!-- Left Panel: Upload & Documents -->
+            <div class="upload-panel">
+                <!-- Upload Zone -->
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                    </div>
+                    <h3>Upload Your Document</h3>
+                    <p>Drag & drop or click to upload</p>
+                    <p class="upload-hint">Supports: {{ allowed_extensions }} (Max {{ max_upload_size_mb }}MB)</p>
+                    <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg" hidden>
+                </div>
+
+                <!-- Upload Progress -->
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">Uploading...</p>
+                </div>
+
+                <!-- Recent Documents -->
+                <div class="documents-list">
+                    <h3>Your Documents</h3>
+                    <div id="documentsList">
+                        {% for doc in documents %}
+                        <div class="document-item" data-id="{{ doc.id }}">
+                            <div class="doc-icon">
+                                {% if doc.file_type == 'pdf' %}
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14,2 14,8 20,8" />
+                                </svg>
+                                {% else %}
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14,2 14,8 20,8" />
+                                    <line x1="16" y1="13" x2="8" y2="13" />
+                                    <line x1="16" y1="17" x2="8" y2="17" />
+                                </svg>
+                                {% endif %}
+                            </div>
+                            <div class="doc-info">
+                                <span class="doc-title">{{ doc.title }}</span>
+                                <span class="doc-meta">{{ doc.page_count }} pages • {{ doc.get_file_size_display
+                                    }}</span>
+                            </div>
+                            <button class="btn-icon select-doc" title="Select">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M5 12h14M12 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                        {% empty %}
+                        <p class="no-documents">No documents yet. Upload your first one!</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Summary & Actions -->
+            <div class="summary-panel">
+                <!-- Document Selected State -->
+                <div class="selected-document" id="selectedDocument" style="display: none;">
+                    <div class="selected-header">
+                        <h3 id="selectedDocTitle">Document Title</h3>
+                        <span class="selected-meta" id="selectedDocMeta"></span>
+                    </div>
+
+                    <!-- Summary Type Selection -->
+                    <div class="summary-options">
+                        <label>Summary Type:</label>
+                        <div class="option-buttons">
+                            <button class="option-btn active" data-type="detailed">Detailed</button>
+                            <button class="option-btn" data-type="brief">Brief</button>
+                            <button class="option-btn" data-type="bullet">Bullet Points</button>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-generate" id="generateBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                        </svg>
+                        Generate Summary
+                    </button>
+                </div>
+
+                <!-- Summary Output -->
+                <div class="summary-output" id="summaryOutput" style="display: none;">
+                    <div class="summary-header">
+                        <h3>Generated Summary</h3>
+                        <div class="summary-meta" id="summaryMeta"></div>
+                    </div>
+                    <div class="summary-content" id="summaryContent"></div>
+
+                    <!-- Action Buttons -->
+                    <div class="summary-actions">
+                        <h4>Generate Learning Materials</h4>
+                        <div class="action-buttons">
+                            <a href="{% url 'quizzes' %}" class="action-btn" id="genQuizBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                                </svg>
+                                Generate Quiz
+                            </a>
+                            <a href="{% url 'flashcards' %}" class="action-btn" id="genFlashcardsBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                                    <path d="M7 8h10" />
+                                    <path d="M7 12h6" />
+                                </svg>
+                                Generate Flashcards
+                            </a>
+                            <a href="{% url 'flowcharts' %}" class="action-btn" id="genFlowchartBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="5" r="3" />
+                                    <circle cx="6" cy="19" r="3" />
+                                    <circle cx="18" cy="19" r="3" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <path d="M12 12L6 16" />
+                                    <path d="M12 12L18 16" />
+                                </svg>
+                                Generate Flowchart
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14,2 14,8 20,8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                    <h3>Select a Document</h3>
+                    <p>Upload or select a document to generate an AI-powered summary</p>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-state" id="loadingState" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Generating summary...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .summary-section {
+        padding: 7rem 0 4rem;
+        min-height: 100vh;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .section-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .section-header p {
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .summary-layout {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 2rem;
+        align-items: start;
+    }
+
+    /* Upload Panel */
+    .upload-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .upload-zone {
+        background: var(--gradient-card);
+        border: 2px dashed var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all var(--transition-normal);
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+        border-color: var(--accent-primary);
+        background: linear-gradient(135deg, rgba(0, 217, 192, 0.1) 0%, rgba(0, 143, 122, 0.05) 100%);
+    }
+
+    .upload-icon {
+        color: var(--accent-primary);
+        margin-bottom: 1rem;
+    }
+
+    .upload-zone h3 {
+        margin-bottom: 0.25rem;
+        font-size: 1.1rem;
+    }
+
+    .upload-zone p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .upload-hint {
+        font-size: 0.8rem !important;
+        margin-top: 0.5rem !important;
+        opacity: 0.7;
+    }
+
+    .upload-progress {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background: var(--bg-tertiary);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.75rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--gradient-primary);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .progress-text {
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .documents-list {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+    }
+
+    .documents-list h3 {
+        margin-bottom: 1rem;
+        font-size: 1rem;
+    }
+
+    .document-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .document-item:hover,
+    .document-item.selected {
+        background: var(--bg-tertiary);
+    }
+
+    .document-item.selected {
+        border-left: 3px solid var(--accent-primary);
+    }
+
+    .doc-icon {
+        color: var(--accent-primary);
+        flex-shrink: 0;
+    }
+
+    .doc-info {
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .doc-title {
+        display: block;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .doc-meta {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .btn-icon {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: var(--radius-sm);
+        transition: all var(--transition-fast);
+    }
+
+    .btn-icon:hover {
+        color: var(--accent-primary);
+        background: var(--bg-tertiary);
+    }
+
+    .no-documents {
+        text-align: center;
+        color: var(--text-secondary);
+        padding: 1rem;
+    }
+
+    /* Summary Panel */
+    .summary-panel {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        min-height: 500px;
+    }
+
+    .selected-document {
+        margin-bottom: 1.5rem;
+    }
+
+    .selected-header h3 {
+        margin-bottom: 0.25rem;
+    }
+
+    .selected-meta {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .summary-options {
+        margin: 1.5rem 0;
+    }
+
+    .summary-options label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+
+    .option-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .option-btn {
+        padding: 0.5rem 1rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .option-btn:hover {
+        border-color: var(--accent-primary);
+        color: var(--text-primary);
+    }
+
+    .option-btn.active {
+        background: var(--gradient-primary);
+        border-color: transparent;
+        color: var(--bg-primary);
+    }
+
+    .btn-generate {
+        width: 100%;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    /* Summary Output */
+    .summary-output {
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .summary-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .summary-header h3 {
+        margin: 0;
+    }
+
+    .summary-meta {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+
+    .summary-content {
+        line-height: 1.8;
+        margin-bottom: 2rem;
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    .summary-content h1,
+    .summary-content h2,
+    .summary-content h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .summary-content ul,
+    .summary-content ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .summary-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .summary-content strong {
+        color: var(--accent-primary);
+    }
+
+    .summary-actions {
+        border-top: 1px solid var(--glass-border);
+        padding-top: 1.5rem;
+    }
+
+    .summary-actions h4 {
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
+    }
+
+    .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+    }
+
+    .action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        text-decoration: none;
+        font-size: 0.85rem;
+        transition: all var(--transition-normal);
+    }
+
+    .action-btn:hover {
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+        transform: translateY(-2px);
+    }
+
+    /* Empty State */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        height: 100%;
+        min-height: 400px;
+        color: var(--text-secondary);
+    }
+
+    .empty-state svg {
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state h3 {
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    /* Loading State */
+    .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        min-height: 400px;
+    }
+
+    .spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid var(--bg-tertiary);
+        border-top-color: var(--accent-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+        .summary-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const documentsList = document.getElementById('documentsList');
+        const selectedDocument = document.getElementById('selectedDocument');
+        const selectedDocTitle = document.getElementById('selectedDocTitle');
+        const selectedDocMeta = document.getElementById('selectedDocMeta');
+        const summaryOutput = document.getElementById('summaryOutput');
+        const summaryContent = document.getElementById('summaryContent');
+        const summaryMeta = document.getElementById('summaryMeta');
+        const emptyState = document.getElementById('emptyState');
+        const loadingState = document.getElementById('loadingState');
+        const generateBtn = document.getElementById('generateBtn');
+        const optionBtns = document.querySelectorAll('.option-btn');
+
+        let currentDocId = null;
+        let currentSummaryType = 'detailed';
+
+        // Drag and drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        uploadZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        // File upload
+        async function handleFileUpload(file) {
+            uploadProgress.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressText.textContent = 'Processing...';
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('title', file.name);
+
+            try {
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        progressFill.style.width = progress + '%';
+                    }
+                }, 100);
+
+                const response = await fetch('{% url "upload_document" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+
+                const result = await response.json();
+
+                if (result.success) {
+                    progressText.textContent = 'Upload complete!';
+                    addDocumentToList(result.document);
+                    selectDocument(result.document.id, result.document.title,
+                        result.document.page_count + ' pages');
+
+                    setTimeout(() => {
+                        uploadProgress.style.display = 'none';
+                    }, 1000);
+                } else {
+                    progressText.textContent = 'Error: ' + result.error;
+                    progressFill.style.background = '#ef4444';
+                }
+            } catch (error) {
+                progressText.textContent = 'Upload failed: ' + error.message;
+                progressFill.style.background = '#ef4444';
+            }
+        }
+
+        function addDocumentToList(doc) {
+            const noDocsMsg = documentsList.querySelector('.no-documents');
+            if (noDocsMsg) noDocsMsg.remove();
+
+            const docEl = document.createElement('div');
+            docEl.className = 'document-item';
+            docEl.dataset.id = doc.id;
+            docEl.innerHTML = `
+            <div class="doc-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14,2 14,8 20,8" />
+                </svg>
+            </div>
+            <div class="doc-info">
+                <span class="doc-title">${doc.title}</span>
+                <span class="doc-meta">${doc.page_count} pages</span>
+            </div>
+            <button class="btn-icon select-doc" title="Select">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+            </button>
+        `;
+            documentsList.prepend(docEl);
+            attachDocumentListeners();
+        }
+
+        // Document selection
+        function attachDocumentListeners() {
+            document.querySelectorAll('.document-item').forEach(item => {
+                item.addEventListener('click', function () {
+                    const id = this.dataset.id;
+                    const title = this.querySelector('.doc-title').textContent;
+                    const meta = this.querySelector('.doc-meta').textContent;
+                    selectDocument(id, title, meta);
+                });
+            });
+        }
+
+        function selectDocument(id, title, meta) {
+            currentDocId = id;
+
+            document.querySelectorAll('.document-item').forEach(el => {
+                el.classList.toggle('selected', el.dataset.id === id);
+            });
+
+            selectedDocTitle.textContent = title;
+            selectedDocMeta.textContent = meta;
+
+            emptyState.style.display = 'none';
+            selectedDocument.style.display = 'block';
+            summaryOutput.style.display = 'none';
+        }
+
+        attachDocumentListeners();
+
+        // Summary type selection
+        optionBtns.forEach(btn => {
+            btn.addEventListener('click', function () {
+                optionBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentSummaryType = this.dataset.type;
+            });
+        });
+
+        // Generate summary
+        generateBtn.addEventListener('click', async function () {
+            if (!currentDocId) return;
+
+            selectedDocument.style.display = 'none';
+            summaryOutput.style.display = 'none';
+            loadingState.style.display = 'flex';
+
+            try {
+                const response = await fetch('{% url "generate_summary" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        document_id: currentDocId,
+                        summary_type: currentSummaryType
+                    })
+                });
+
+                const result = await response.json();
+
+                loadingState.style.display = 'none';
+
+                if (result.success) {
+                    summaryContent.innerHTML = formatMarkdown(result.summary.content);
+                    summaryMeta.textContent = `${result.summary.word_count} words • Generated in ${result.summary.generation_time}s`;
+                    selectedDocument.style.display = 'block';
+                    summaryOutput.style.display = 'block';
+                } else {
+                    alert('Error: ' + result.error);
+                    selectedDocument.style.display = 'block';
+                }
+            } catch (error) {
+                loadingState.style.display = 'none';
+                selectedDocument.style.display = 'block';
+                alert('Failed to generate summary: ' + error.message);
+            }
+        });
+
+        // Improved markdown formatter
+        function formatMarkdown(text) {
+            // Escape HTML first to prevent XSS
+            let html = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            // Process line by line for better control
+            const lines = html.split('\n');
+            let result = [];
+            let inList = false;
+            let listType = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+
+                // Headers
+                if (line.match(/^### /)) {
+                    if (inList) { result.push(listType === 'ul' ? '</ul>' : '</ol>'); inList = false; }
+                    result.push('<h3>' + line.substring(4) + '</h3>');
+                    continue;
+                }
+                if (line.match(/^## /)) {
+                    if (inList) { result.push(listType === 'ul' ? '</ul>' : '</ol>'); inList = false; }
+                    result.push('<h2>' + line.substring(3) + '</h2>');
+                    continue;
+                }
+                if (line.match(/^# /)) {
+                    if (inList) { result.push(listType === 'ul' ? '</ul>' : '</ol>'); inList = false; }
+                    result.push('<h1>' + line.substring(2) + '</h1>');
+                    continue;
+                }
+
+                // Bullet points
+                if (line.match(/^[\*\-] /)) {
+                    if (!inList || listType !== 'ul') {
+                        if (inList) result.push('</ol>');
+                        result.push('<ul>');
+                        inList = true;
+                        listType = 'ul';
+                    }
+                    result.push('<li>' + formatInline(line.substring(2)) + '</li>');
+                    continue;
+                }
+
+                // Numbered lists
+                if (line.match(/^\d+\. /)) {
+                    if (!inList || listType !== 'ol') {
+                        if (inList) result.push('</ul>');
+                        result.push('<ol>');
+                        inList = true;
+                        listType = 'ol';
+                    }
+                    result.push('<li>' + formatInline(line.replace(/^\d+\. /, '')) + '</li>');
+                    continue;
+                }
+
+                // Close list if we're no longer in one
+                if (inList && line.trim() === '') {
+                    result.push(listType === 'ul' ? '</ul>' : '</ol>');
+                    inList = false;
+                    result.push('<br>');
+                    continue;
+                }
+
+                if (inList) {
+                    result.push(listType === 'ul' ? '</ul>' : '</ol>');
+                    inList = false;
+                }
+
+                // Regular paragraphs
+                if (line.trim() === '') {
+                    result.push('<br>');
+                } else {
+                    result.push('<p>' + formatInline(line) + '</p>');
+                }
+            }
+
+            // Close any open list
+            if (inList) {
+                result.push(listType === 'ul' ? '</ul>' : '</ol>');
+            }
+
+            return result.join('\n');
+        }
+
+        // Format inline elements (bold, italic)
+        function formatInline(text) {
+            return text
+                .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>');
+        }
+    });
+</script>
+{% endblock %}

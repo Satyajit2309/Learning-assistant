@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block title %}LearnAI - Transform Your Learning with AI{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1>
+                Transform Your <span class="text-gradient">Learning</span> with AI
+            </h1>
+            <p>
+                Upload your study materials and let AI create personalized summaries,
+                quizzes, flashcards, and concept maps. Learn smarter, not harder.
+            </p>
+            <div class="hero-buttons">
+                <a href="{% url 'summaries' %}" class="btn btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                    Try AI Summary
+                </a>
+                <a href="#features" class="btn btn-secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polygon points="10,8 16,12 10,16" fill="currentColor" />
+                    </svg>
+                    Explore Features
+                </a>
+            </div>
+        </div>
+
+        <!-- Floating Shapes -->
+        <div class="hero-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features" id="features">
+    <div class="container">
+        <div class="features-header">
+            <h2>Powerful <span class="text-gradient">Learning Tools</span></h2>
+            <p>Transform any study material into interactive learning resources powered by AI</p>
+        </div>
+
+        <div class="features-grid">
+            <!-- AI Summaries - Primary Card -->
+            <div class="feature-card feature-card-primary">
+                <div class="feature-badge">Start Here</div>
+                <div class="feature-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14,2 14,8 20,8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <line x1="10" y1="9" x2="8" y2="9" />
+                    </svg>
+                </div>
+                <h3>AI Summary</h3>
+                <p>
+                    Upload your documents and get intelligent AI-powered summaries. Then generate
+                    quizzes, flashcards, and flowcharts from your uploaded content.
+                </p>
+                <a href="{% url 'summaries' %}" class="btn btn-primary">
+                    Get Started
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Quiz Generation -->
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                </div>
+                <h3>Quiz Generation</h3>
+                <p>
+                    Auto-generate quizzes from your materials with multiple question types.
+                    MCQs, true/false, fill-in-blanks with instant feedback and scoring.
+                </p>
+                <a href="{% url 'quizzes' %}" class="btn btn-outline">
+                    Create Quizzes
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Flashcards -->
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="4" width="20" height="16" rx="2" />
+                        <path d="M7 8h10" />
+                        <path d="M7 12h6" />
+                    </svg>
+                </div>
+                <h3>Smart Flashcards</h3>
+                <p>
+                    Create flashcards automatically from key concepts. Uses spaced repetition
+                    algorithm to optimize your memory retention and learning efficiency.
+                </p>
+                <a href="{% url 'flashcards' %}" class="btn btn-outline">
+                    Study Flashcards
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Concept Flowcharts -->
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="5" r="3" />
+                        <circle cx="6" cy="19" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <path d="M12 12L6 16" />
+                        <path d="M12 12L18 16" />
+                    </svg>
+                </div>
+                <h3>Concept Flowcharts</h3>
+                <p>
+                    Visualize complex topics with auto-generated mind maps and flowcharts.
+                    See how concepts connect and build understanding visually.
+                </p>
+                <a href="{% url 'flowcharts' %}" class="btn btn-outline">
+                    View Flowcharts
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Progress Analytics -->
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10" />
+                        <line x1="12" y1="20" x2="12" y2="4" />
+                        <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                </div>
+                <h3>Progress Analytics</h3>
+                <p>
+                    Track your learning journey with detailed analytics. See quiz scores,
+                    flashcard retention rates, and identify areas needing more focus.
+                </p>
+                <a href="{% url 'analytics' %}" class="btn btn-outline">
+                    View Analytics
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="section">
+    <div class="container text-center">
+        <h2>Ready to <span class="text-gradient">Transform</span> Your Learning?</h2>
+        <p class="mt-2 mb-4"
+            style="color: var(--text-secondary); max-width: 500px; margin-left: auto; margin-right: auto;">
+            Start by uploading your study materials and experience the power of AI-assisted learning.
+        </p>
+        <a href="{% url 'summaries' %}" class="btn btn-primary">
+            Try AI Summary
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+        </a>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Primary Feature Card Styling */
+    .feature-card-primary {
+        position: relative;
+        background: linear-gradient(135deg, rgba(0, 217, 192, 0.1) 0%, rgba(0, 143, 122, 0.05) 100%) !important;
+        border: 2px solid var(--accent-primary) !important;
+        grid-column: span 2;
+    }
+
+    .feature-card-primary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--gradient-primary);
+        opacity: 0.03;
+        border-radius: inherit;
+        pointer-events: none;
+    }
+
+    .feature-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: var(--gradient-primary);
+        color: var(--bg-primary);
+        padding: 0.375rem 0.875rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .feature-card-primary .feature-icon {
+        background: var(--gradient-primary);
+        color: var(--bg-primary);
+    }
+
+    .feature-card-primary h3 {
+        font-size: 1.5rem;
+    }
+
+    .feature-card-primary p {
+        font-size: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .feature-card-primary {
+            grid-column: span 1;
+        }
+    }
+</style>
+{% endblock %}

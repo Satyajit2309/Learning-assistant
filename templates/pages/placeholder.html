@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - LearnAI{% endblock %}
+
+{% block content %}
+<section class="hero" style="min-height: 60vh;">
+    <div class="container">
+        <div class="hero-content">
+            <div class="feature-icon" style="margin-bottom: 1.5rem;">
+                {{ icon|safe }}
+            </div>
+            <h1>{{ title }}</h1>
+            <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 2rem;">
+                {{ description }}
+            </p>
+            <div class="card" style="max-width: 600px;">
+                <div style="text-align: center; padding: 2rem;">
+                    <div style="margin-bottom: 1rem;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)"
+                            stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                            <path d="M2 17l10 5 10-5" />
+                            <path d="M2 12l10 5 10-5" />
+                        </svg>
+                    </div>
+                    <h3>Coming Soon</h3>
+                    <p style="color: var(--text-secondary);">
+                        This feature is currently under development. Check back soon!
+                    </p>
+                    <a href="{% url 'home' %}" class="btn btn-primary mt-3">
+                        Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
