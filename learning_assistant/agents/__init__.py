@@ -23,6 +23,9 @@ from .registry import AgentRegistry, get_agent
 
 # Import agents to trigger registration via @AgentRegistry.register decorator
 from .summary_agent import SummaryAgent
+from .quiz_agent import QuizAgent
+from .flashcard_agent import FlashcardAgent
+from .flowchart_agent import FlowchartAgent
 
 __all__ = [
     'BaseAgent',
@@ -30,5 +33,7 @@ __all__ = [
     'get_agent',
     'get_gemini_client',
     'SummaryAgent',
+    'QuizAgent',
+    'FlashcardAgent',
+    'FlowchartAgent',
 ]
-

@@ -1,0 +1,679 @@
+{% extends 'base.html' %}
+
+{% block title %}Concept Flowcharts - LearnAI{% endblock %}
+
+{% block content %}
+<section class="flowchart-section">
+    <div class="container">
+        <!-- Header -->
+        <div class="section-header">
+            <h1>Concept <span class="text-gradient">Flowcharts</span></h1>
+            <p>Visualize complex topics with AI-generated concept maps and flowcharts from your study materials.</p>
+        </div>
+
+        <div class="flowchart-layout">
+            <!-- Left Panel: Document Selection & Config -->
+            <div class="config-panel">
+                <!-- Document Selection -->
+                <div class="panel-card">
+                    <h3>Select Document</h3>
+                    <div class="documents-list" id="documentsList">
+                        {% for doc in documents %}
+                        <div class="document-item" data-id="{{ doc.id }}">
+                            <div class="doc-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14,2 14,8 20,8" />
+                                </svg>
+                            </div>
+                            <div class="doc-info">
+                                <span class="doc-title">{{ doc.title }}</span>
+                                <span class="doc-meta">{{ doc.page_count }} pages</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-docs">
+                            <p>No documents yet.</p>
+                            <a href="{% url 'summaries' %}" class="btn btn-secondary">Upload Document</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Flowchart Configuration -->
+                <div class="panel-card" id="configPanel" style="display: none;">
+                    <h3>Flowchart Settings</h3>
+
+                    <!-- Detail Level -->
+                    <div class="config-group">
+                        <label>Detail Level</label>
+                        <div class="option-buttons">
+                            <button class="option-btn" data-level="simple">
+                                <span class="count-num">Simple</span>
+                                <span class="count-label">1 Flowchart</span>
+                            </button>
+                            <button class="option-btn active" data-level="medium">
+                                <span class="count-num">Medium</span>
+                                <span class="count-label">1-2 Flowcharts</span>
+                            </button>
+                            <button class="option-btn" data-level="detailed">
+                                <span class="count-num">Detailed</span>
+                                <span class="count-label">2-3 Flowcharts</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Info Card -->
+                    <div class="info-card">
+                        <div class="info-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4" />
+                                <path d="M12 8h.01" />
+                            </svg>
+                        </div>
+                        <p>Simple = Fundamental concepts. Detailed = Comprehensive coverage with multiple diagrams.</p>
+                    </div>
+
+                    <button class="btn btn-primary btn-generate" id="generateBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="3" />
+                            <path d="M12 2v4" />
+                            <path d="M12 18v4" />
+                            <path d="M4.93 4.93l2.83 2.83" />
+                            <path d="M16.24 16.24l2.83 2.83" />
+                            <path d="M2 12h4" />
+                            <path d="M18 12h4" />
+                            <path d="M4.93 19.07l2.83-2.83" />
+                            <path d="M16.24 7.76l2.83-2.83" />
+                        </svg>
+                        Generate Flowcharts
+                    </button>
+                </div>
+
+                <!-- Recent Flowcharts -->
+                {% if recent_flowcharts %}
+                <div class="panel-card">
+                    <h3>Recent Flowcharts</h3>
+                    <div class="recent-flowcharts">
+                        {% for fc in recent_flowcharts %}
+                        <a href="{% url 'view_flowchart' fc.id %}" class="recent-flowchart-item">
+                            <div class="flowchart-info">
+                                <span class="flowchart-title">{{ fc.title|truncatechars:30 }}</span>
+                                <span class="flowchart-meta">{{ fc.node_count }} nodes • {{ fc.edge_count }}
+                                    connections</span>
+                            </div>
+                            <div class="flowchart-arrow">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M5 12h14" />
+                                    <path d="M12 5l7 7-7 7" />
+                                </svg>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Panel: Main Content -->
+            <div class="main-panel">
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <circle cx="5" cy="6" r="2" />
+                            <circle cx="12" cy="6" r="2" />
+                            <circle cx="19" cy="6" r="2" />
+                            <circle cx="5" cy="18" r="2" />
+                            <circle cx="12" cy="18" r="2" />
+                            <circle cx="19" cy="18" r="2" />
+                            <path d="M5 8v8" />
+                            <path d="M12 8v8" />
+                            <path d="M19 8v8" />
+                            <path d="M7 6h3" />
+                            <path d="M14 6h3" />
+                            <path d="M7 18h3" />
+                            <path d="M14 18h3" />
+                        </svg>
+                    </div>
+                    <h3>Generate Flowcharts</h3>
+                    <p>Select a document and choose the level of detail for your concept map.</p>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-state" id="loadingState" style="display: none;">
+                    <div class="flowchart-loader">
+                        <div class="loader-node node-1"></div>
+                        <div class="loader-node node-2"></div>
+                        <div class="loader-node node-3"></div>
+                        <div class="loader-line line-1"></div>
+                        <div class="loader-line line-2"></div>
+                    </div>
+                    <h3>Generating Flowcharts...</h3>
+                    <p>Our AI is analyzing your document and mapping concept relationships.</p>
+                </div>
+
+                <!-- Success State -->
+                <div class="success-state" id="successState" style="display: none;">
+                    <div class="success-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            <polyline points="22 4 12 14.01 9 11.01" />
+                        </svg>
+                    </div>
+                    <h3>Flowcharts Ready!</h3>
+                    <p id="flowchartInfo">2 flowcharts generated</p>
+                    <a href="#" class="btn btn-primary" id="viewBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8" />
+                            <path d="M8 12h8" />
+                        </svg>
+                        View Flowcharts
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .flowchart-section {
+        padding: 7rem 0 4rem;
+        min-height: 100vh;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .section-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .section-header p {
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .flowchart-layout {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 2rem;
+        align-items: start;
+    }
+
+    /* Config Panel */
+    .config-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .panel-card {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        backdrop-filter: var(--glass-blur);
+    }
+
+    .panel-card h3 {
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+
+    /* Document List */
+    .documents-list {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .document-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .document-item:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .document-item.selected {
+        background: linear-gradient(135deg, rgba(0, 217, 192, 0.15) 0%, rgba(0, 143, 122, 0.1) 100%);
+        border-left: 3px solid var(--accent-primary);
+    }
+
+    .doc-icon {
+        color: var(--accent-primary);
+        flex-shrink: 0;
+    }
+
+    .doc-info {
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .doc-title {
+        display: block;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .doc-meta {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .empty-docs {
+        text-align: center;
+        padding: 1.5rem;
+        color: var(--text-secondary);
+    }
+
+    .empty-docs p {
+        margin-bottom: 1rem;
+    }
+
+    /* Config Groups */
+    .config-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .config-group label {
+        display: block;
+        margin-bottom: 0.75rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .option-buttons {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+
+    .option-btn {
+        padding: 0.75rem 0.5rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .option-btn:hover {
+        border-color: var(--accent-primary);
+        color: var(--text-primary);
+    }
+
+    .option-btn.active {
+        background: var(--gradient-primary);
+        border-color: transparent;
+        color: var(--bg-primary);
+    }
+
+    .count-num {
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .count-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: center;
+    }
+
+    /* Info Card */
+    .info-card {
+        display: flex;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: rgba(0, 217, 192, 0.08);
+        border: 1px solid rgba(0, 217, 192, 0.2);
+        border-radius: var(--radius-md);
+        margin-bottom: 1.5rem;
+    }
+
+    .info-icon {
+        color: var(--accent-primary);
+        flex-shrink: 0;
+    }
+
+    .info-card p {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    .btn-generate {
+        width: 100%;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    /* Recent Flowcharts */
+    .recent-flowcharts {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .recent-flowchart-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        text-decoration: none;
+        transition: all var(--transition-fast);
+    }
+
+    .recent-flowchart-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateX(5px);
+    }
+
+    .flowchart-title {
+        display: block;
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .flowchart-meta {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .flowchart-arrow {
+        color: var(--accent-primary);
+    }
+
+    /* Main Panel */
+    .main-panel {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 3rem;
+        min-height: 500px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        color: var(--text-secondary);
+    }
+
+    .empty-icon {
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+    }
+
+    .empty-state h3 {
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    /* Loading State */
+    .loading-state {
+        text-align: center;
+    }
+
+    .flowchart-loader {
+        position: relative;
+        width: 120px;
+        height: 80px;
+        margin: 0 auto 2rem;
+    }
+
+    .loader-node {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        background: var(--gradient-primary);
+        border-radius: 8px;
+        animation: nodeFloat 1.5s ease-in-out infinite;
+    }
+
+    .loader-node.node-1 {
+        top: 0;
+        left: 45px;
+        animation-delay: 0s;
+    }
+
+    .loader-node.node-2 {
+        top: 50px;
+        left: 10px;
+        animation-delay: 0.3s;
+    }
+
+    .loader-node.node-3 {
+        top: 50px;
+        left: 80px;
+        animation-delay: 0.6s;
+    }
+
+    .loader-line {
+        position: absolute;
+        width: 2px;
+        height: 25px;
+        background: var(--accent-primary);
+        opacity: 0.5;
+    }
+
+    .loader-line.line-1 {
+        top: 28px;
+        left: 35px;
+        transform: rotate(-30deg);
+        animation: lineFlash 1.5s ease-in-out infinite 0.15s;
+    }
+
+    .loader-line.line-2 {
+        top: 28px;
+        left: 83px;
+        transform: rotate(30deg);
+        animation: lineFlash 1.5s ease-in-out infinite 0.45s;
+    }
+
+    @keyframes nodeFloat {
+
+        0%,
+        100% {
+            transform: translateY(0);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        50% {
+            transform: translateY(-5px);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+    }
+
+    @keyframes lineFlash {
+
+        0%,
+        100% {
+            opacity: 0.3;
+        }
+
+        50% {
+            opacity: 0.8;
+        }
+    }
+
+    .loading-state h3 {
+        margin-bottom: 0.5rem;
+    }
+
+    .loading-state p {
+        color: var(--text-secondary);
+    }
+
+    /* Success State */
+    .success-state {
+        text-align: center;
+        animation: fadeInUp 0.5s ease;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .success-icon {
+        color: var(--accent-primary);
+        margin-bottom: 1.5rem;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    .success-state h3 {
+        margin-bottom: 0.5rem;
+    }
+
+    .success-state p {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+        .flowchart-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const documentsList = document.getElementById('documentsList');
+        const configPanel = document.getElementById('configPanel');
+        const emptyState = document.getElementById('emptyState');
+        const loadingState = document.getElementById('loadingState');
+        const successState = document.getElementById('successState');
+        const generateBtn = document.getElementById('generateBtn');
+        const flowchartInfo = document.getElementById('flowchartInfo');
+        const viewBtn = document.getElementById('viewBtn');
+
+        let selectedDocId = null;
+        let selectedLevel = 'medium';
+
+        // Document selection
+        document.querySelectorAll('.document-item').forEach(item => {
+            item.addEventListener('click', function () {
+                document.querySelectorAll('.document-item').forEach(el => el.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedDocId = this.dataset.id;
+                configPanel.style.display = 'block';
+            });
+        });
+
+        // Detail level selection
+        document.querySelectorAll('[data-level]').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('[data-level]').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedLevel = this.dataset.level;
+            });
+        });
+
+        // Generate flowchart
+        generateBtn.addEventListener('click', async function () {
+            if (!selectedDocId) {
+                alert('Please select a document first');
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            successState.style.display = 'none';
+            loadingState.style.display = 'block';
+            generateBtn.disabled = true;
+
+            try {
+                const response = await fetch('{% url "generate_flowchart" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        document_id: selectedDocId,
+                        detail_level: selectedLevel
+                    })
+                });
+
+                const result = await response.json();
+
+                loadingState.style.display = 'none';
+                generateBtn.disabled = false;
+
+                if (result.success) {
+                    flowchartInfo.textContent = `${result.count} flowchart(s) generated`;
+                    if (result.flowcharts.length > 0) {
+                        viewBtn.href = `/flowchart/${result.flowcharts[0].id}/`;
+                    }
+                    successState.style.display = 'block';
+                } else {
+                    alert('Error: ' + result.error);
+                    emptyState.style.display = 'block';
+                }
+            } catch (error) {
+                loadingState.style.display = 'none';
+                generateBtn.disabled = false;
+                emptyState.style.display = 'block';
+                alert('Failed to generate flowchart: ' + error.message);
+            }
+        });
+    });
+</script>
+{% endblock %}

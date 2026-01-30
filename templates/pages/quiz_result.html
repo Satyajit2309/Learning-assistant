@@ -1,0 +1,504 @@
+{% extends 'base.html' %}
+
+{% block title %}Quiz Results - LearnAI{% endblock %}
+
+{% block content %}
+<section class="result-section">
+    <div class="container">
+        <!-- Result Header -->
+        <div class="result-header">
+            <div class="result-score-container">
+                <div class="score-circle {% if quiz.percentage_score >= 70 %}passed{% else %}failed{% endif %}">
+                    <span class="score-value">{{ quiz.percentage_score }}</span>
+                    <span class="score-percent">%</span>
+                </div>
+                <div class="score-label">
+                    {% if quiz.percentage_score >= 70 %}
+                    <span class="result-badge passed">Passed!</span>
+                    {% else %}
+                    <span class="result-badge failed">Try Again</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="result-stats">
+                <h1>{{ quiz.title }}</h1>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-value">{{ quiz.score }}</span>
+                        <span class="stat-label">Correct</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ quiz.question_count }}</span>
+                        <span class="stat-label">Total</span>
+                    </div>
+                    <div class="stat-item xp-stat">
+                        <span class="stat-value">+{{ quiz.xp_earned }}</span>
+                        <span class="stat-label">XP Earned</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- XP Animation -->
+        {% if quiz.xp_earned > 0 %}
+        <div class="xp-celebration" id="xpCelebration">
+            <div class="xp-burst">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon
+                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+            </div>
+            <span class="xp-amount">+{{ quiz.xp_earned }} XP</span>
+        </div>
+        {% endif %}
+
+        <!-- Question Review -->
+        <div class="review-section">
+            <h2>Question Review</h2>
+
+            <div class="questions-review">
+                {% for question in questions %}
+                <div class="review-card {% if question.is_correct %}correct{% else %}incorrect{% endif %}">
+                    <div class="review-header">
+                        <span class="question-number">Q{{ forloop.counter }}</span>
+                        {% if question.is_correct %}
+                        <span class="review-badge correct">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            Correct
+                        </span>
+                        {% else %}
+                        <span class="review-badge incorrect">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="3">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            Incorrect
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="review-question">{{ question.question_text }}</div>
+
+                    <div class="review-options">
+                        {% for letter, text in question.get_options_list %}
+                        <div
+                            class="review-option 
+                            {% if letter == question.correct_answer %}correct-answer{% endif %}
+                            {% if letter == question.user_answer and letter != question.correct_answer %}wrong-answer{% endif %}">
+                            <span class="option-letter">{{ letter }}</span>
+                            <span class="option-text">{{ text }}</span>
+                            {% if letter == question.correct_answer %}
+                            <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            {% endif %}
+                            {% if letter == question.user_answer and letter != question.correct_answer %}
+                            <svg class="x-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="3">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if question.explanation %}
+                    <div class="review-explanation">
+                        <strong>Explanation:</strong> {{ question.explanation }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="result-actions">
+            <a href="{% url 'quizzes' %}" class="btn btn-secondary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                Back to Quizzes
+            </a>
+            <a href="{% url 'accounts:profile' %}" class="btn btn-primary">
+                View Profile
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-section {
+        padding: 7rem 0 4rem;
+        min-height: 100vh;
+    }
+
+    /* Result Header */
+    .result-header {
+        display: flex;
+        align-items: center;
+        gap: 3rem;
+        margin-bottom: 2rem;
+        padding: 2.5rem;
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-xl);
+        backdrop-filter: var(--glass-blur);
+    }
+
+    .result-score-container {
+        text-align: center;
+    }
+
+    .score-circle {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+
+    .score-circle::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        padding: 4px;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+    }
+
+    .score-circle.passed::before {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+    }
+
+    .score-circle.failed::before {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .score-value {
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .score-percent {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .result-badge {
+        display: inline-block;
+        padding: 0.5rem 1.5rem;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .result-badge.passed {
+        background: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+    }
+
+    .result-badge.failed {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+    }
+
+    .result-stats {
+        flex-grow: 1;
+    }
+
+    .result-stats h1 {
+        font-size: 1.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stats-grid {
+        display: flex;
+        gap: 2rem;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-item .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .stat-item .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .xp-stat .stat-value {
+        color: var(--accent-primary);
+    }
+
+    /* XP Celebration */
+    .xp-celebration {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        background: linear-gradient(135deg, rgba(0, 217, 192, 0.15) 0%, rgba(0, 143, 122, 0.1) 100%);
+        border: 1px solid var(--accent-primary);
+        border-radius: var(--radius-lg);
+        animation: celebratePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes celebratePulse {
+
+        0%,
+        100% {
+            box-shadow: 0 0 20px rgba(0, 217, 192, 0.2);
+        }
+
+        50% {
+            box-shadow: 0 0 40px rgba(0, 217, 192, 0.4);
+        }
+    }
+
+    .xp-burst {
+        color: var(--accent-primary);
+        animation: starSpin 4s linear infinite;
+    }
+
+    @keyframes starSpin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .xp-amount {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--accent-primary);
+    }
+
+    /* Review Section */
+    .review-section h2 {
+        margin-bottom: 1.5rem;
+    }
+
+    .questions-review {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .review-card {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        backdrop-filter: var(--glass-blur);
+    }
+
+    .review-card.correct {
+        border-left: 4px solid #22c55e;
+    }
+
+    .review-card.incorrect {
+        border-left: 4px solid #ef4444;
+    }
+
+    .review-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .question-number {
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .review-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .review-badge.correct {
+        background: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+    }
+
+    .review-badge.incorrect {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+    }
+
+    .review-question {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+
+    .review-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .review-option {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+    }
+
+    .review-option .option-letter {
+        width: 28px;
+        height: 28px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .review-option .option-text {
+        flex-grow: 1;
+    }
+
+    .review-option.correct-answer {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .review-option.correct-answer .option-letter {
+        background: #22c55e;
+        color: white;
+    }
+
+    .review-option.wrong-answer {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .review-option.wrong-answer .option-letter {
+        background: #ef4444;
+        color: white;
+    }
+
+    .check-icon {
+        color: #22c55e;
+    }
+
+    .x-icon {
+        color: #ef4444;
+    }
+
+    .review-explanation {
+        padding: 1rem;
+        background: rgba(0, 217, 192, 0.05);
+        border-left: 3px solid var(--accent-primary);
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+    }
+
+    .review-explanation strong {
+        color: var(--accent-primary);
+    }
+
+    /* Actions */
+    .result-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .result-header {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .stats-grid {
+            justify-content: center;
+        }
+
+        .result-actions {
+            flex-direction: column;
+        }
+
+        .result-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animate score on load
+    document.addEventListener('DOMContentLoaded', function () {
+        const scoreValue = document.querySelector('.score-value');
+        const targetScore = parseInt(scoreValue.textContent);
+        let currentScore = 0;
+
+        const duration = 1500;
+        const increment = targetScore / (duration / 16);
+
+        function animateScore() {
+            currentScore += increment;
+            if (currentScore >= targetScore) {
+                scoreValue.textContent = targetScore;
+            } else {
+                scoreValue.textContent = Math.floor(currentScore);
+                requestAnimationFrame(animateScore);
+            }
+        }
+
+        animateScore();
+    });
+</script>
+{% endblock %}
