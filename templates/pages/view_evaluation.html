@@ -1,0 +1,470 @@
+{% extends 'base.html' %}
+
+{% block title %}Evaluation Results - LearnAI{% endblock %}
+
+{% block content %}
+<section class="results-section">
+    <div class="container">
+        <!-- Header -->
+        <div class="results-header">
+            <a href="{% url 'evaluations' %}" class="back-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back to Evaluations
+            </a>
+            <h1>{{ evaluation.title }}</h1>
+            <div class="result-meta">
+                <span class="meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    {{ evaluation.created_at|date:"M d, Y" }}
+                </span>
+                <span class="meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    {{ evaluation.difficulty_label }} ({{ evaluation.difficulty }}/10)
+                </span>
+                <span class="meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20V10" />
+                        <path d="M18 20V4" />
+                        <path d="M6 20v-4" />
+                    </svg>
+                    {{ evaluation.question_count }} Questions
+                </span>
+            </div>
+        </div>
+
+        <!-- Score Card -->
+        <div class="score-card">
+            <div class="score-main">
+                <div class="score-circle {% if evaluation.overall_score >= 70 %}passed{% else %}failed{% endif %}">
+                    <span class="score-percent">{{ evaluation.overall_score|floatformat:0 }}%</span>
+                    <span class="score-label">Overall Score</span>
+                </div>
+                <div class="score-details">
+                    <div class="score-stat">
+                        <span class="stat-value">+{{ evaluation.xp_earned }}</span>
+                        <span class="stat-label">XP Earned</span>
+                    </div>
+                    <div class="score-stat">
+                        <span class="stat-value">{{ evaluation.question_count }}</span>
+                        <span class="stat-label">Questions</span>
+                    </div>
+                    <div class="score-stat">
+                        <span class="stat-value">{{ evaluation.evaluation_time|floatformat:1 }}s</span>
+                        <span class="stat-label">Eval Time</span>
+                    </div>
+                </div>
+            </div>
+            {% if evaluation.general_feedback %}
+            <div class="general-feedback">
+                <h4>General Feedback</h4>
+                <p>{{ evaluation.general_feedback }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Questions List -->
+        <div class="questions-section">
+            <h2>Question-by-Question Analysis</h2>
+
+            <div class="questions-list">
+                {% for question in questions %}
+                <div class="question-card">
+                    <div class="question-header">
+                        <span class="question-number">Question {{ forloop.counter }}</span>
+                        <span
+                            class="question-score {% if question.score_percentage >= 80 %}excellent{% elif question.score_percentage >= 50 %}good{% else %}needs-work{% endif %}">
+                            {{ question.score_percentage|floatformat:0 }}%
+                        </span>
+                    </div>
+
+                    <div class="question-content">
+                        <div class="question-text">
+                            <h4>{{ question.question_text }}</h4>
+                        </div>
+
+                        <div class="answer-comparison">
+                            <div class="answer-box student-answer">
+                                <div class="answer-label">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                        <circle cx="12" cy="7" r="4" />
+                                    </svg>
+                                    Your Answer
+                                </div>
+                                <p>{{ question.student_answer }}</p>
+                            </div>
+
+                            <div class="answer-box ideal-answer">
+                                <div class="answer-label">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                        <polyline points="22 4 12 14.01 9 11.01" />
+                                    </svg>
+                                    Ideal Answer
+                                </div>
+                                <p>{{ question.ideal_answer }}</p>
+                            </div>
+                        </div>
+
+                        {% if question.feedback %}
+                        <div class="question-feedback">
+                            <div class="feedback-label">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                </svg>
+                                Feedback
+                            </div>
+                            <p>{{ question.feedback }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Score Bar -->
+                    <div class="score-bar-container">
+                        <div class="score-bar" style="width: {{ question.score_percentage }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="results-actions">
+            <a href="{% url 'evaluations' %}" class="btn btn-outline">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Upload Another
+            </a>
+            <a href="{% url 'home' %}" class="btn btn-primary">
+                Back to Home
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .results-section {
+        padding: 7rem 0 4rem;
+        min-height: 100vh;
+    }
+
+    /* Header */
+    .results-header {
+        margin-bottom: 2rem;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        transition: color var(--transition-fast);
+    }
+
+    .back-link:hover {
+        color: var(--accent-primary);
+    }
+
+    .results-header h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .result-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    /* Score Card */
+    .score-card {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .score-main {
+        display: flex;
+        align-items: center;
+        gap: 3rem;
+        flex-wrap: wrap;
+    }
+
+    .score-circle {
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 4px solid;
+    }
+
+    .score-circle.passed {
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.1);
+    }
+
+    .score-circle.failed {
+        border-color: #ef4444;
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .score-percent {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .score-circle .score-label {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .score-details {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .score-stat {
+        text-align: center;
+    }
+
+    .stat-value {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--accent-primary);
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .general-feedback {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--glass-border);
+    }
+
+    .general-feedback h4 {
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+    }
+
+    .general-feedback p {
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    /* Questions Section */
+    .questions-section h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .questions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .question-card {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }
+
+    .question-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        background: var(--bg-tertiary);
+    }
+
+    .question-number {
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .question-score {
+        padding: 0.375rem 0.875rem;
+        border-radius: var(--radius-sm);
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .question-score.excellent {
+        background: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+    }
+
+    .question-score.good {
+        background: rgba(234, 179, 8, 0.15);
+        color: #eab308;
+    }
+
+    .question-score.needs-work {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+    }
+
+    .question-content {
+        padding: 1.5rem;
+    }
+
+    .question-text h4 {
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+
+    .answer-comparison {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .answer-box {
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--glass-border);
+    }
+
+    .student-answer {
+        background: rgba(234, 179, 8, 0.05);
+        border-color: rgba(234, 179, 8, 0.3);
+    }
+
+    .ideal-answer {
+        background: rgba(34, 197, 94, 0.05);
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .answer-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+    }
+
+    .student-answer .answer-label {
+        color: #eab308;
+    }
+
+    .ideal-answer .answer-label {
+        color: #22c55e;
+    }
+
+    .answer-box p {
+        color: var(--text-primary);
+        line-height: 1.6;
+    }
+
+    .question-feedback {
+        background: var(--bg-tertiary);
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        margin-top: 1rem;
+    }
+
+    .feedback-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--accent-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .question-feedback p {
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    .score-bar-container {
+        height: 4px;
+        background: var(--bg-tertiary);
+    }
+
+    .score-bar {
+        height: 100%;
+        background: var(--gradient-primary);
+        transition: width 0.5s ease;
+    }
+
+    /* Actions */
+    .results-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 3rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .score-main {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .score-details {
+            justify-content: center;
+        }
+
+        .results-actions {
+            flex-direction: column;
+        }
+
+        .results-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}

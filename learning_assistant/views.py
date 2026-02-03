@@ -1,7 +1,7 @@
 """
 Learning Assistant Views
 
-Views for the main learning features: Summary, Quiz, Flashcards, Flowcharts, Analytics.
+Views for the main learning features: Summary, Quiz, Flashcards, Flowcharts, Evaluations, Analytics.
 """
 
 import json
@@ -14,7 +14,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.utils import timezone
 
-from .models import Document, Summary, Quiz, QuizQuestion, FlashcardSet, Flashcard, Flowchart, FlowchartNode, FlowchartEdge
+from .models import Document, Summary, Quiz, QuizQuestion, FlashcardSet, Flashcard, Flowchart, FlowchartNode, FlowchartEdge, AnswerSheetEvaluation, EvaluatedQuestion
 from .services import DocumentProcessor, VectorStoreService
 from .agents import get_agent
 
@@ -850,3 +850,210 @@ def analytics(request):
         'description': 'Track your learning journey with detailed analytics and identify areas needing focus.'
     }
     return render(request, 'pages/placeholder.html', context)
+
+
+# ========== Answer Sheet Evaluation Views ==========
+
+@login_required
+def evaluations(request):
+    """Evaluation hub - upload answer sheets for AI evaluation"""
+    return render(request, 'pages/evaluations.html')
+
+
+@login_required
+@require_http_methods(["POST"])
+def upload_answer_sheet(request):
+    """Upload answer sheet image for AI evaluation"""
+    try:
+        if 'file' not in request.FILES:
+            return JsonResponse({
+                'success': False,
+                'error': 'No file uploaded'
+            }, status=400)
+        
+        uploaded_file = request.FILES['file']
+        title = request.POST.get('title', uploaded_file.name)
+        
+        # Validate file type - only images for Gemini Vision
+        file_ext = uploaded_file.name.lower().split('.')[-1]
+        if file_ext not in ['png', 'jpg', 'jpeg', 'gif', 'webp']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Only image files (PNG, JPG, GIF, WebP) are supported'
+            }, status=400)
+        
+        # Validate file size (max 10MB for vision API)
+        max_size = 10 * 1024 * 1024
+        if uploaded_file.size > max_size:
+            return JsonResponse({
+                'success': False,
+                'error': 'File too large. Maximum size is 10MB.'
+            }, status=400)
+        
+        # Create evaluation record and save file
+        evaluation = AnswerSheetEvaluation.objects.create(
+            user=request.user,
+            title=title,
+            answer_sheet_file=uploaded_file,
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'evaluation': {
+                'id': str(evaluation.id),
+                'title': evaluation.title,
+                'file_name': uploaded_file.name,
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def evaluate_answer_sheet(request):
+    """Run AI evaluation on an uploaded answer sheet"""
+    try:
+        data = json.loads(request.body)
+        evaluation_id = data.get('evaluation_id')
+        difficulty = int(data.get('difficulty', 5))
+        reference_content = data.get('reference_content')  # Direct content from uploaded file
+        
+        if not evaluation_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'Evaluation ID required'
+            }, status=400)
+        
+        # Get evaluation
+        evaluation = get_object_or_404(AnswerSheetEvaluation, id=evaluation_id, user=request.user)
+        
+        if evaluation.is_evaluated:
+            return JsonResponse({
+                'success': False,
+                'error': 'This answer sheet has already been evaluated'
+            }, status=400)
+        
+        # Check that file exists
+        if not evaluation.answer_sheet_file:
+            return JsonResponse({
+                'success': False,
+                'error': 'No answer sheet file found. Please re-upload.'
+            }, status=400)
+        
+        # Check API key
+        if not settings.GEMINI_API_KEY:
+            return JsonResponse({
+                'success': False,
+                'error': 'AI features not configured. Please set GEMINI_API_KEY.'
+            }, status=500)
+        
+        # Update difficulty
+        evaluation.difficulty = max(1, min(10, difficulty))
+        evaluation.save()
+        
+        # Run evaluation with Gemini Vision
+        try:
+            start_time = time.time()
+            agent = get_agent('evaluation')
+            # Get the absolute path to the uploaded image
+            image_path = evaluation.answer_sheet_file.path
+            result = agent.generate_sync(
+                image_path,
+                difficulty=difficulty,
+                reference_content=reference_content,
+            )
+            evaluation_time = time.time() - start_time
+        except ValueError as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            return JsonResponse({
+                'success': False,
+                'error': f'Evaluation failed: {str(e)}'
+            }, status=500)
+        
+        if not result.get('success'):
+            return JsonResponse({
+                'success': False,
+                'error': result.get('error', 'Failed to evaluate answer sheet')
+            }, status=500)
+        
+        # Save evaluation results
+        evaluation.overall_score = result.get('overall_score', 0)
+        evaluation.question_count = len(result.get('questions', []))
+        evaluation.general_feedback = result.get('general_feedback', '')
+        evaluation.model_used = agent.model_name
+        evaluation.evaluation_time = evaluation_time
+        evaluation.is_evaluated = True
+        
+        # Calculate and save XP
+        xp_earned = evaluation.calculate_xp()
+        evaluation.xp_earned = xp_earned
+        evaluation.save()
+        
+        # Create evaluated questions
+        for q_data in result.get('questions', []):
+            EvaluatedQuestion.objects.create(
+                evaluation=evaluation,
+                question_text=q_data['question_text'],
+                student_answer=q_data['student_answer'],
+                ideal_answer=q_data['ideal_answer'],
+                score_percentage=q_data['score_percentage'],
+                feedback=q_data['feedback'],
+                order=q_data.get('order', 0),
+            )
+        
+        # Update user profile
+        profile = request.user.profile
+        profile.add_xp(xp_earned)
+        profile.update_streak()
+        profile.save()
+        
+        return JsonResponse({
+            'success': True,
+            'result': {
+                'evaluation_id': str(evaluation.id),
+                'overall_score': evaluation.overall_score,
+                'question_count': evaluation.question_count,
+                'xp_earned': xp_earned,
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def view_evaluation(request, evaluation_id):
+    """Display detailed evaluation results"""
+    evaluation = get_object_or_404(AnswerSheetEvaluation, id=evaluation_id, user=request.user)
+    
+    if not evaluation.is_evaluated:
+        messages.warning(request, 'This answer sheet has not been evaluated yet.')
+        return redirect('evaluations')
+    
+    questions = evaluation.questions.all()
+    
+    context = {
+        'evaluation': evaluation,
+        'questions': questions,
+    }
+    return render(request, 'pages/view_evaluation.html', context)
+

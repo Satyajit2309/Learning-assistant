@@ -1,0 +1,841 @@
+{% extends 'base.html' %}
+
+{% block title %}Answer Evaluation - LearnAI{% endblock %}
+
+{% block content %}
+<section class="evaluation-section">
+    <div class="container">
+        <!-- Header -->
+        <div class="section-header">
+            <h1>Answer <span class="text-gradient">Evaluation</span></h1>
+            <p>Upload handwritten answer sheets and get AI-powered evaluation with detailed feedback.</p>
+        </div>
+
+        <div class="evaluation-layout">
+            <!-- Left Panel: Upload & Config -->
+            <div class="config-panel">
+                <!-- Upload Area -->
+                <div class="panel-card">
+                    <h3>Upload Answer Sheet</h3>
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-content">
+                            <div class="upload-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                            </div>
+                            <p>Drag & drop your answer sheet here</p>
+                            <span class="upload-hint">Image files only (PNG, JPG, GIF, WebP) • Max 10MB</span>
+                            <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.gif,.webp" hidden>
+                        </div>
+                    </div>
+                    <div class="upload-info" id="uploadInfo" style="display: none;">
+                        <div class="file-info">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14,2 14,8 20,8" />
+                            </svg>
+                            <span id="fileName">document.pdf</span>
+                        </div>
+                        <button class="btn btn-ghost" id="removeFile">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Evaluation Settings -->
+                <div class="panel-card" id="configPanel" style="display: none;">
+                    <h3>Evaluation Settings</h3>
+
+                    <!-- Difficulty Slider -->
+                    <div class="config-group">
+                        <label>Strictness Level: <span id="difficultyLabel">5 - Standard</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="difficultySlider" min="1" max="10" value="5" class="slider">
+                            <div class="slider-labels">
+                                <span>Lenient</span>
+                                <span>Standard</span>
+                                <span>Strict</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reference Document Upload -->
+                    <div class="config-group">
+                        <label>Reference Material (Optional)</label>
+                        <div class="reference-upload-zone" id="referenceUploadZone">
+                            <div class="reference-upload-content">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14,2 14,8 20,8" />
+                                    <line x1="12" y1="18" x2="12" y2="12" />
+                                    <line x1="9" y1="15" x2="15" y2="15" />
+                                </svg>
+                                <span>Upload reference document</span>
+                            </div>
+                            <input type="file" id="referenceFileInput" accept=".pdf,.txt,.docx,.png,.jpg,.jpeg" hidden>
+                        </div>
+                        <div class="reference-info" id="referenceInfo" style="display: none;">
+                            <div class="ref-file-info">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14,2 14,8 20,8" />
+                                </svg>
+                                <span id="referenceFileName">reference.pdf</span>
+                            </div>
+                            <button class="btn btn-ghost btn-sm" id="removeReference">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="reference-hint">Upload a PDF, text file, or image to compare answers against</p>
+                    </div>
+
+                    <button class="btn btn-primary btn-generate" id="evaluateBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M9 11l3 3L22 4" />
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                        </svg>
+                        Evaluate Answer Sheet
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Main Content -->
+            <div class="main-panel">
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M9 11l3 3L22 4" />
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                        </svg>
+                    </div>
+                    <h3>Upload an Answer Sheet</h3>
+                    <p>Upload your handwritten answer sheet to get AI-powered evaluation with detailed feedback.</p>
+                </div>
+
+                <!-- Image Preview State -->
+                <div class="preview-state" id="previewState" style="display: none;">
+                    <h3>Answer Sheet Preview</h3>
+                    <div class="image-preview-container">
+                        <img id="imagePreview" src="" alt="Answer Sheet Preview" class="image-preview">
+                    </div>
+                    <p class="preview-hint">Your image is ready. Configure settings and click "Evaluate Answer Sheet".
+                    </p>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-state" id="loadingState" style="display: none;">
+                    <div class="spinner-container">
+                        <div class="spinner"></div>
+                        <div class="spinner-ring"></div>
+                    </div>
+                    <h3 id="loadingTitle">Processing...</h3>
+                    <p id="loadingText">Extracting text from your answer sheet...</p>
+                </div>
+
+                <!-- Success State -->
+                <div class="success-state" id="successState" style="display: none;">
+                    <div class="success-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            <polyline points="22 4 12 14.01 9 11.01" />
+                        </svg>
+                    </div>
+                    <h3>Evaluation Complete!</h3>
+                    <div class="success-score">
+                        <span class="score-value" id="scoreValue">85%</span>
+                        <span class="score-label">Overall Score</span>
+                    </div>
+                    <p id="evalInfo">5 questions evaluated</p>
+                    <a href="#" class="btn btn-primary" id="viewResultsBtn">
+                        View Detailed Results
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .evaluation-section {
+        padding: 7rem 0 4rem;
+        min-height: 100vh;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .section-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .section-header p {
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .evaluation-layout {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 2rem;
+        align-items: start;
+    }
+
+    /* Config Panel */
+    .config-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .panel-card {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        backdrop-filter: var(--glass-blur);
+    }
+
+    .panel-card h3 {
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+
+    /* Upload Zone */
+    .upload-zone {
+        border: 2px dashed var(--glass-border);
+        border-radius: var(--radius-md);
+        padding: 2rem 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+        border-color: var(--accent-primary);
+        background: rgba(0, 217, 192, 0.05);
+    }
+
+    .upload-icon {
+        color: var(--accent-primary);
+        margin-bottom: 1rem;
+    }
+
+    .upload-zone p {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .upload-hint {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .upload-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 1rem;
+        padding: 0.75rem;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+    }
+
+    .file-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--accent-primary);
+    }
+
+    .file-info span {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .btn-ghost {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: var(--radius-sm);
+    }
+
+    .btn-ghost:hover {
+        color: var(--danger);
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* Slider */
+    .slider-container {
+        margin-top: 0.5rem;
+    }
+
+    .slider {
+        width: 100%;
+        -webkit-appearance: none;
+        height: 8px;
+        border-radius: 4px;
+        background: var(--bg-tertiary);
+        outline: none;
+    }
+
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent-primary);
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 217, 192, 0.4);
+    }
+
+    .slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent-primary);
+        cursor: pointer;
+        border: none;
+    }
+
+    .slider-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    /* Config Groups */
+    .config-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .config-group label {
+        display: block;
+        margin-bottom: 0.75rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+
+    /* Reference Upload Zone */
+    .reference-upload-zone {
+        border: 2px dashed var(--glass-border);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .reference-upload-zone:hover {
+        border-color: var(--accent-secondary);
+        background: rgba(138, 43, 226, 0.05);
+    }
+
+    .reference-upload-content {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .reference-upload-content svg {
+        color: var(--accent-secondary);
+    }
+
+    .reference-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0.75rem;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-sm);
+        margin-top: 0.5rem;
+    }
+
+    .ref-file-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--accent-secondary);
+        font-size: 0.85rem;
+    }
+
+    .ref-file-info span {
+        color: var(--text-primary);
+    }
+
+    .reference-hint {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+    }
+
+    .btn-sm {
+        padding: 0.25rem;
+    }
+
+    .btn-generate {
+        width: 100%;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    /* Main Panel */
+    .main-panel {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 3rem;
+        min-height: 500px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        color: var(--text-secondary);
+    }
+
+    .empty-icon {
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+    }
+
+    .empty-state h3 {
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    /* Preview State */
+    .preview-state {
+        width: 100%;
+    }
+
+    .preview-state h3 {
+        margin-bottom: 1rem;
+    }
+
+    .image-preview-container {
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        max-height: 400px;
+        overflow: auto;
+        text-align: center;
+    }
+
+    .image-preview {
+        max-width: 100%;
+        max-height: 350px;
+        border-radius: var(--radius-sm);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .preview-hint {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin-top: 1rem;
+        text-align: center;
+    }
+
+    /* Loading State */
+    .loading-state {
+        text-align: center;
+    }
+
+    .spinner-container {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
+    }
+
+    .spinner {
+        width: 80px;
+        height: 80px;
+        border: 3px solid var(--bg-tertiary);
+        border-top-color: var(--accent-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    .spinner-ring {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 60px;
+        height: 60px;
+        border: 3px solid transparent;
+        border-bottom-color: var(--accent-secondary);
+        border-radius: 50%;
+        animation: spin 1.5s linear infinite reverse;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loading-state h3 {
+        margin-bottom: 0.5rem;
+    }
+
+    .loading-state p {
+        color: var(--text-secondary);
+    }
+
+    /* Success State */
+    .success-state {
+        text-align: center;
+        animation: fadeInUp 0.5s ease;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .success-icon {
+        color: var(--accent-primary);
+        margin-bottom: 1.5rem;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    .success-score {
+        margin: 1.5rem 0;
+    }
+
+    .score-value {
+        display: block;
+        font-size: 3rem;
+        font-weight: 700;
+        color: var(--accent-primary);
+    }
+
+    .score-label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .success-state h3 {
+        margin-bottom: 0.5rem;
+    }
+
+    .success-state p {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+        .evaluation-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadInfo = document.getElementById('uploadInfo');
+        const fileName = document.getElementById('fileName');
+        const removeFile = document.getElementById('removeFile');
+        const configPanel = document.getElementById('configPanel');
+        const difficultySlider = document.getElementById('difficultySlider');
+        const difficultyLabel = document.getElementById('difficultyLabel');
+        const evaluateBtn = document.getElementById('evaluateBtn');
+
+        // Reference upload elements
+        const referenceUploadZone = document.getElementById('referenceUploadZone');
+        const referenceFileInput = document.getElementById('referenceFileInput');
+        const referenceInfo = document.getElementById('referenceInfo');
+        const referenceFileName = document.getElementById('referenceFileName');
+        const removeReference = document.getElementById('removeReference');
+
+        const emptyState = document.getElementById('emptyState');
+        const previewState = document.getElementById('previewState');
+        const loadingState = document.getElementById('loadingState');
+        const loadingTitle = document.getElementById('loadingTitle');
+        const loadingText = document.getElementById('loadingText');
+        const successState = document.getElementById('successState');
+        const scoreValue = document.getElementById('scoreValue');
+        const evalInfo = document.getElementById('evalInfo');
+        const viewResultsBtn = document.getElementById('viewResultsBtn');
+
+        let currentEvaluationId = null;
+        let selectedFile = null;
+        let referenceContent = null;
+
+        // Difficulty labels
+        const difficultyLabels = {
+            1: 'Very Lenient', 2: 'Lenient', 3: 'Lenient',
+            4: 'Standard', 5: 'Standard', 6: 'Standard',
+            7: 'Strict', 8: 'Strict', 9: 'Very Strict', 10: 'Very Strict'
+        };
+
+        // Update difficulty label
+        difficultySlider.addEventListener('input', function () {
+            difficultyLabel.textContent = `${this.value} - ${difficultyLabels[this.value]}`;
+        });
+
+        // Click to upload answer sheet
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                handleFile(fileInput.files[0]);
+            }
+        });
+
+        // Remove file
+        removeFile.addEventListener('click', () => {
+            resetUpload();
+        });
+
+        // Reference document upload
+        referenceUploadZone.addEventListener('click', () => referenceFileInput.click());
+
+        referenceFileInput.addEventListener('change', async () => {
+            if (referenceFileInput.files.length) {
+                const file = referenceFileInput.files[0];
+                referenceFileName.textContent = file.name;
+                referenceUploadZone.style.display = 'none';
+                referenceInfo.style.display = 'flex';
+
+                // Read file content
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    referenceContent = e.target.result;
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        removeReference.addEventListener('click', () => {
+            referenceContent = null;
+            referenceFileInput.value = '';
+            referenceUploadZone.style.display = 'block';
+            referenceInfo.style.display = 'none';
+        });
+
+        function resetUpload() {
+            selectedFile = null;
+            currentEvaluationId = null;
+            fileInput.value = '';
+            uploadZone.style.display = 'block';
+            uploadInfo.style.display = 'none';
+            configPanel.style.display = 'none';
+
+            emptyState.style.display = 'block';
+            previewState.style.display = 'none';
+            loadingState.style.display = 'none';
+            successState.style.display = 'none';
+        }
+
+        async function handleFile(file) {
+            // Validate file type - images only for Gemini Vision
+            const validTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please upload an image file (PNG, JPG, GIF, WebP)');
+                return;
+            }
+
+            // Validate size (10MB for vision API)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File too large. Maximum size is 10MB.');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = file.name;
+            uploadZone.style.display = 'none';
+            uploadInfo.style.display = 'flex';
+
+            // Show loading state
+            emptyState.style.display = 'none';
+            loadingState.style.display = 'block';
+            loadingTitle.textContent = 'Uploading...';
+            loadingText.textContent = 'Preparing your answer sheet for evaluation...';
+
+            // Upload file
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
+
+            try {
+                const response = await fetch('{% url "upload_answer_sheet" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentEvaluationId = result.evaluation.id;
+
+                    // Show image preview
+                    loadingState.style.display = 'none';
+                    previewState.style.display = 'block';
+
+                    // Create local preview of the image
+                    const imagePreview = document.getElementById('imagePreview');
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        imagePreview.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+
+                    configPanel.style.display = 'block';
+                } else {
+                    alert('Error: ' + result.error);
+                    resetUpload();
+                }
+            } catch (error) {
+                alert('Failed to process file: ' + error.message);
+                resetUpload();
+            }
+        }
+
+        // Evaluate button
+        evaluateBtn.addEventListener('click', async function () {
+            if (!currentEvaluationId) {
+                alert('Please upload a file first');
+                return;
+            }
+
+            previewState.style.display = 'none';
+            loadingState.style.display = 'block';
+            loadingTitle.textContent = 'Evaluating...';
+            loadingText.textContent = 'Our AI is analyzing your answers...';
+            evaluateBtn.disabled = true;
+
+            try {
+                const response = await fetch('{% url "evaluate_answer_sheet" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        evaluation_id: currentEvaluationId,
+                        difficulty: parseInt(difficultySlider.value),
+                        reference_content: referenceContent || null
+                    })
+                });
+
+                const result = await response.json();
+
+                loadingState.style.display = 'none';
+                evaluateBtn.disabled = false;
+
+                if (result.success) {
+                    scoreValue.textContent = result.result.overall_score.toFixed(0) + '%';
+                    evalInfo.textContent = `${result.result.question_count} questions evaluated • +${result.result.xp_earned} XP`;
+                    viewResultsBtn.href = `/evaluation/${result.result.evaluation_id}/`;
+                    successState.style.display = 'block';
+                } else {
+                    alert('Error: ' + result.error);
+                    previewState.style.display = 'block';
+                }
+            } catch (error) {
+                loadingState.style.display = 'none';
+                evaluateBtn.disabled = false;
+                previewState.style.display = 'block';
+                alert('Evaluation failed: ' + error.message);
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -2,13 +2,13 @@
 AI Agents Package
 
 This package contains the modular AI agent system for the Learning Assistant.
-Each feature (Summary, Quiz, Flashcard, Flowchart) has its own dedicated agent
+Each feature (Summary, Quiz, Flashcard, Flowchart, Evaluation) has its own dedicated agent
 that inherits from a common base class sharing the Gemini API client.
 
 Architecture:
 - BaseAgent: Shared Gemini client and common functionality
 - AgentRegistry: Central registry for managing and accessing agents
-- Individual agents: SummaryAgent, QuizAgent, FlashcardAgent, FlowchartAgent
+- Individual agents: SummaryAgent, QuizAgent, FlashcardAgent, FlowchartAgent, EvaluationAgent
 
 Adding a new agent:
 1. Create a new file in this directory (e.g., my_agent.py)
@@ -26,6 +26,7 @@ from .summary_agent import SummaryAgent
 from .quiz_agent import QuizAgent
 from .flashcard_agent import FlashcardAgent
 from .flowchart_agent import FlowchartAgent
+from .evaluation_agent import EvaluationAgent
 
 __all__ = [
     'BaseAgent',
@@ -36,4 +37,6 @@ __all__ = [
     'QuizAgent',
     'FlashcardAgent',
     'FlowchartAgent',
+    'EvaluationAgent',
 ]
+

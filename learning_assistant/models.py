@@ -479,3 +479,139 @@ class FlowchartEdge(models.Model):
     
     def __str__(self):
         return f"{self.from_node} → {self.to_node}"
+
+
+def answer_sheet_upload_path(instance, filename):
+    """Generate upload path for answer sheets."""
+    return f'answer_sheets/{instance.user.id}/{filename}'
+
+
+class AnswerSheetEvaluation(models.Model):
+    """
+    Model for storing answer sheet evaluations.
+    
+    Users upload handwritten answer sheet PDFs, the system extracts text via OCR,
+    and an AI agent evaluates answers with percentage-based scoring.
+    """
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='evaluations'
+    )
+    
+    # Upload info
+    title = models.CharField(max_length=255)
+    answer_sheet_file = models.FileField(upload_to=answer_sheet_upload_path)
+    
+    # OCR result
+    extracted_text = models.TextField(blank=True)
+    
+    # Optional reference document
+    reference_document = models.ForeignKey(
+        Document,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='evaluations'
+    )
+    
+    # Difficulty slider (1=lenient, 10=strict)
+    difficulty = models.PositiveIntegerField(
+        default=5,
+        help_text="1=very lenient, 10=very strict"
+    )
+    
+    # Results
+    overall_score = models.FloatField(null=True, blank=True)  # Percentage 0-100
+    question_count = models.PositiveIntegerField(default=0)
+    xp_earned = models.PositiveIntegerField(default=0)
+    is_evaluated = models.BooleanField(default=False)
+    general_feedback = models.TextField(blank=True)
+    
+    # Generation metadata
+    model_used = models.CharField(max_length=100, blank=True)
+    evaluation_time = models.FloatField(default=0)  # in seconds
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Answer Sheet Evaluation'
+        verbose_name_plural = 'Answer Sheet Evaluations'
+    
+    def __str__(self):
+        return f"Evaluation: {self.title}"
+    
+    @property
+    def difficulty_label(self):
+        """Return human-readable difficulty label."""
+        if self.difficulty <= 3:
+            return "Lenient"
+        elif self.difficulty <= 6:
+            return "Standard"
+        else:
+            return "Strict"
+    
+    def calculate_xp(self):
+        """Calculate XP earned based on score and difficulty."""
+        if not self.is_evaluated or self.overall_score is None:
+            return 0
+        
+        # Base XP: 1 point per percentage point of score
+        base_xp = int(self.overall_score)
+        
+        # Difficulty multiplier: 0.8x for lenient, 1x for standard, 1.5x for strict
+        if self.difficulty <= 3:
+            multiplier = 0.8
+        elif self.difficulty <= 6:
+            multiplier = 1.0
+        else:
+            multiplier = 1.5
+        
+        return int(base_xp * multiplier)
+
+
+class EvaluatedQuestion(models.Model):
+    """
+    Individual evaluated question within an answer sheet evaluation.
+    
+    Stores the question, student's answer, ideal answer, score, and feedback.
+    """
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    evaluation = models.ForeignKey(
+        AnswerSheetEvaluation,
+        on_delete=models.CASCADE,
+        related_name='questions'
+    )
+    
+    question_text = models.TextField()
+    student_answer = models.TextField()
+    ideal_answer = models.TextField()
+    
+    score_percentage = models.FloatField(help_text="Score as percentage 0-100")
+    feedback = models.TextField()
+    
+    # Display order
+    order = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        ordering = ['order']
+        verbose_name = 'Evaluated Question'
+        verbose_name_plural = 'Evaluated Questions'
+    
+    def __str__(self):
+        return f"Q{self.order + 1}: {self.question_text[:50]}..."
+    
+    @property
+    def score_color(self):
+        """Return a color based on the score for UI."""
+        if self.score_percentage >= 80:
+            return "success"
+        elif self.score_percentage >= 50:
+            return "warning"
+        else:
+            return "danger"
+

@@ -29,6 +29,12 @@ urlpatterns = [
     path('api/generate-flowchart/', views.generate_flowchart, name='generate_flowchart'),
     path('flowchart/<uuid:flowchart_id>/', views.view_flowchart, name='view_flowchart'),
     
+    # Answer Sheet Evaluation
+    path('evaluations/', views.evaluations, name='evaluations'),
+    path('api/upload-answer-sheet/', views.upload_answer_sheet, name='upload_answer_sheet'),
+    path('api/evaluate-answer-sheet/', views.evaluate_answer_sheet, name='evaluate_answer_sheet'),
+    path('evaluation/<uuid:evaluation_id>/', views.view_evaluation, name='view_evaluation'),
+    
     # Other features (placeholders)
     path('analytics/', views.analytics, name='analytics'),
 ]
