@@ -14,7 +14,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.utils import timezone
 
-from .models import Document, Summary, Quiz, QuizQuestion, FlashcardSet, Flashcard, Flowchart, FlowchartNode, FlowchartEdge, AnswerSheetEvaluation, EvaluatedQuestion
+from .models import Document, Summary, Quiz, QuizQuestion, FlashcardSet, Flashcard, Flowchart, FlowchartNode, FlowchartEdge, AnswerSheetEvaluation, EvaluatedQuestion, Podcast
 from .services import DocumentProcessor, VectorStoreService
 from .agents import get_agent
 
@@ -1057,3 +1057,262 @@ def view_evaluation(request, evaluation_id):
     }
     return render(request, 'pages/view_evaluation.html', context)
 
+
+# ========== Podcast Views ==========
+
+@login_required
+def podcasts(request):
+    """Podcast hub - select documents and generate AI podcasts"""
+    documents = Document.objects.filter(user=request.user).order_by('-created_at')[:10]
+    recent_podcasts = Podcast.objects.filter(user=request.user).order_by('-created_at')[:5]
+    
+    context = {
+        'documents': documents,
+        'recent_podcasts': recent_podcasts,
+    }
+    return render(request, 'pages/podcast.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def generate_podcast(request):
+    """Generate a podcast from a document via AJAX"""
+    try:
+        data = json.loads(request.body)
+        document_id = data.get('document_id')
+        level = data.get('level', 'beginner')
+        
+        if not document_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'Document ID required'
+            }, status=400)
+        
+        if level not in ('beginner', 'intermediate', 'advanced'):
+            level = 'beginner'
+        
+        # Get document
+        document = get_object_or_404(Document, id=document_id, user=request.user)
+        
+        # Check if API key is configured
+        if not settings.GEMINI_API_KEY:
+            return JsonResponse({
+                'success': False,
+                'error': 'AI features not configured. Please set GEMINI_API_KEY.'
+            }, status=500)
+        
+        # Get document content
+        context = document.extracted_text
+        
+        # Limit context size
+        MAX_CONTEXT_CHARS = 10000
+        if len(context) > MAX_CONTEXT_CHARS:
+            context = context[:MAX_CONTEXT_CHARS] + "\n\n[... Content truncated for processing ...]"
+        
+        if not context:
+            return JsonResponse({
+                'success': False,
+                'error': 'No content available for this document'
+            }, status=400)
+        
+        # Step 1: Generate podcast script
+        try:
+            start_time = time.time()
+            agent = get_agent('podcast')
+            result = agent.generate_sync(context, level=level)
+        except ValueError as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            return JsonResponse({
+                'success': False,
+                'error': f'Script generation failed: {str(e)}'
+            }, status=500)
+        
+        if not result.get('success'):
+            return JsonResponse({
+                'success': False,
+                'error': result.get('error', 'Failed to generate podcast script')
+            }, status=500)
+        
+        script = result['script']
+        
+        # Step 2: Convert script to audio using edge-tts
+        try:
+            import edge_tts
+            import asyncio
+            import tempfile
+            import os
+            
+            # Parse script into speaker segments
+            segments = []
+            for line in script.split('\n'):
+                line = line.strip()
+                if line.startswith('ALEX:'):
+                    segments.append(('alex', line[5:].strip()))
+                elif line.startswith('SAM:'):
+                    segments.append(('sam', line[4:].strip()))
+            
+            if not segments:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Failed to parse podcast script into dialogue segments'
+                }, status=500)
+            
+            # Voice mapping - newer multilingual neural voices sound more natural
+            voices = {
+                'alex': 'en-US-AndrewMultilingualNeural',
+                'sam': 'en-US-AvaMultilingualNeural',
+            }
+            
+            async def generate_audio_segments():
+                """Generate audio for each segment and concatenate."""
+                audio_parts = []
+                
+                for speaker, text in segments:
+                    if not text:
+                        continue
+                    voice = voices[speaker]
+                    # Slightly slower rate for more natural conversational pacing
+                    communicate = edge_tts.Communicate(
+                        text, voice, rate='-5%', pitch='+0Hz'
+                    )
+                    
+                    # Create temp file for this segment
+                    temp_file = tempfile.NamedTemporaryFile(
+                        suffix='.mp3', delete=False
+                    )
+                    temp_path = temp_file.name
+                    temp_file.close()
+                    
+                    await communicate.save(temp_path)
+                    
+                    with open(temp_path, 'rb') as f:
+                        audio_parts.append(f.read())
+                    
+                    os.unlink(temp_path)
+                
+                return b''.join(audio_parts)
+            
+            # Run async TTS generation
+            audio_data = asyncio.run(generate_audio_segments())
+            generation_time = time.time() - start_time
+            
+            # Save audio file
+            import uuid as uuid_lib
+            from django.core.files.base import ContentFile
+            
+            audio_filename = f"podcast_{uuid_lib.uuid4().hex[:8]}.mp3"
+            
+            # Create podcast record
+            podcast = Podcast.objects.create(
+                document=document,
+                user=request.user,
+                title=f"Podcast: {document.title}",
+                level=level,
+                script=script,
+                model_used=agent.model_name,
+                generation_time=generation_time,
+            )
+            
+            # Save audio file to the model
+            podcast.audio_file.save(
+                audio_filename,
+                ContentFile(audio_data),
+                save=True
+            )
+            
+            # Estimate duration (rough: ~150 words per minute for TTS)
+            word_count = result.get('word_count', len(script.split()))
+            estimated_duration = int(word_count / 150 * 60)
+            podcast.duration_seconds = estimated_duration
+            podcast.save(update_fields=['duration_seconds'])
+            
+            return JsonResponse({
+                'success': True,
+                'podcast': {
+                    'id': str(podcast.id),
+                    'title': podcast.title,
+                    'level': podcast.level,
+                    'duration': podcast.duration_display,
+                    'audio_url': podcast.audio_file.url,
+                    'script': podcast.script,
+                    'generation_time': round(generation_time, 2),
+                    'view_url': f'/podcast/{podcast.id}/',
+                    'download_url': f'/podcast/{podcast.id}/download/',
+                }
+            })
+            
+        except ImportError:
+            return JsonResponse({
+                'success': False,
+                'error': 'edge-tts is not installed. Run: pip install edge-tts'
+            }, status=500)
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            return JsonResponse({
+                'success': False,
+                'error': f'Audio generation failed: {str(e)}'
+            }, status=500)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def download_podcast(request, podcast_id):
+    """Serve podcast audio file for download"""
+    from django.http import FileResponse
+    
+    podcast = get_object_or_404(Podcast, id=podcast_id, user=request.user)
+    
+    if not podcast.audio_file:
+        messages.error(request, 'Podcast audio file not found.')
+        return redirect('podcasts')
+    
+    response = FileResponse(
+        podcast.audio_file.open('rb'),
+        content_type='audio/mpeg'
+    )
+    safe_title = podcast.title.replace(' ', '_').replace(':', '')[:50]
+    response['Content-Disposition'] = f'attachment; filename="{safe_title}.mp3"'
+    return response
+
+
+@login_required
+def view_podcast(request, podcast_id):
+    """Display detailed podcast view with script, player, and download"""
+    podcast = get_object_or_404(Podcast, id=podcast_id, user=request.user)
+    
+    # Parse script into structured lines for the template
+    script_lines = []
+    if podcast.script:
+        for line in podcast.script.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('ALEX:'):
+                script_lines.append({'speaker': 'alex', 'text': line[5:].strip()})
+            elif line.startswith('SAM:'):
+                script_lines.append({'speaker': 'sam', 'text': line[4:].strip()})
+            else:
+                script_lines.append({'speaker': 'narrator', 'text': line})
+    
+    context = {
+        'podcast': podcast,
+        'script_lines': script_lines,
+    }
+    return render(request, 'pages/view_podcast.html', context)

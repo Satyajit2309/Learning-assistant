@@ -615,3 +615,79 @@ class EvaluatedQuestion(models.Model):
         else:
             return "danger"
 
+
+def podcast_upload_path(instance, filename):
+    """Generate upload path for podcast audio files."""
+    return f'podcasts/{instance.user.id}/{filename}'
+
+
+class Podcast(models.Model):
+    """
+    Model for storing generated AI podcasts.
+    
+    Each podcast is generated from a document with a selected depth level.
+    Contains the conversational script and the generated audio file.
+    Two AI hosts (Alex and Sam) discuss the topic in a natural conversation.
+    """
+    
+    LEVEL_CHOICES = [
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    document = models.ForeignKey(
+        Document,
+        on_delete=models.CASCADE,
+        related_name='podcasts'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='podcasts'
+    )
+    
+    title = models.CharField(max_length=255)
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default='beginner')
+    script = models.TextField(blank=True, help_text="Full conversation script between hosts")
+    audio_file = models.FileField(upload_to=podcast_upload_path, blank=True, null=True)
+    
+    # Audio metadata
+    duration_seconds = models.PositiveIntegerField(default=0)
+    
+    # Generation metadata
+    model_used = models.CharField(max_length=100, blank=True)
+    generation_time = models.FloatField(default=0)  # in seconds
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Podcast'
+        verbose_name_plural = 'Podcasts'
+    
+    def __str__(self):
+        return f"Podcast: {self.title}"
+    
+    @property
+    def level_label(self):
+        """Return human-readable level label."""
+        labels = {
+            'beginner': '🟢 Beginner',
+            'intermediate': '🟡 Intermediate',
+            'advanced': '🔴 Advanced',
+        }
+        return labels.get(self.level, self.level.title())
+    
+    @property
+    def duration_display(self):
+        """Return human-readable duration."""
+        if self.duration_seconds == 0:
+            return "Unknown"
+        minutes = self.duration_seconds // 60
+        seconds = self.duration_seconds % 60
+        if minutes > 0:
+            return f"{minutes}m {seconds}s"
+        return f"{seconds}s"
+

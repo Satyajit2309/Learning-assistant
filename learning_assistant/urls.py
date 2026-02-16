@@ -37,4 +37,10 @@ urlpatterns = [
     
     # Other features (placeholders)
     path('analytics/', views.analytics, name='analytics'),
+    
+    # Podcasts
+    path('podcasts/', views.podcasts, name='podcasts'),
+    path('api/generate-podcast/', views.generate_podcast, name='generate_podcast'),
+    path('podcast/<uuid:podcast_id>/download/', views.download_podcast, name='download_podcast'),
+    path('podcast/<uuid:podcast_id>/', views.view_podcast, name='view_podcast'),
 ]
