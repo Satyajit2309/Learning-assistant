@@ -48,23 +48,28 @@
             <p>Transform any study material into interactive learning resources powered by AI</p>
         </div>
 
-        <div class="features-grid">
-            <!-- AI Summaries - Primary Card -->
-            <div class="feature-card feature-card-primary">
+        <!-- ===== TOP ROW: Two Hero Features ===== -->
+        <div class="hero-features">
+
+            <!-- AI Summary -->
+            <div class="feature-card feature-hero">
                 <div class="feature-badge">Start Here</div>
-                <div class="feature-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14,2 14,8 20,8" />
-                        <line x1="16" y1="13" x2="8" y2="13" />
-                        <line x1="16" y1="17" x2="8" y2="17" />
-                        <line x1="10" y1="9" x2="8" y2="9" />
-                    </svg>
+                <div class="feature-hero-top">
+                    <div class="feature-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14,2 14,8 20,8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <line x1="10" y1="9" x2="8" y2="9" />
+                        </svg>
+                    </div>
+                    <h3>AI Summary</h3>
                 </div>
-                <h3>AI Summary</h3>
                 <p>
-                    Upload your documents and get intelligent AI-powered summaries. Then generate
-                    quizzes, flashcards, and flowcharts from your uploaded content.
+                    Upload your documents and get intelligent, AI-powered summaries. Then generate
+                    quizzes, flashcards, and flowcharts from your content.
                 </p>
                 <a href="{% url 'summaries' %}" class="btn btn-primary">
                     Get Started
@@ -74,10 +79,45 @@
                 </a>
             </div>
 
+            <!-- Document Chatbot -->
+            <div class="feature-card feature-hero feature-hero-chat">
+                <div class="feature-badge feature-badge-new">New</div>
+                <div class="feature-hero-top">
+                    <div class="feature-icon feature-icon-chat">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            <line x1="9" y1="10" x2="15" y2="10" />
+                            <line x1="12" y1="7" x2="12" y2="13" />
+                        </svg>
+                    </div>
+                    <h3>Chat with Documents</h3>
+                </div>
+                <p>
+                    Have a conversation with your study materials. Ask questions, get explanations,
+                    and explore concepts interactively with your AI study companion.
+                </p>
+                <a href="{% url 'chatbot' %}" class="btn btn-primary">
+                    Start Chatting
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- ===== DIVIDER ===== -->
+        <div class="features-divider">
+            <span>More Tools</span>
+        </div>
+
+        <!-- ===== SECONDARY FEATURES GRID ===== -->
+        <div class="features-grid">
+
             <!-- Quiz Generation -->
             <div class="feature-card">
-                <div class="feature-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="feature-icon feature-icon-sm">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10" />
                         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                         <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -85,8 +125,8 @@
                 </div>
                 <h3>Quiz Generation</h3>
                 <p>
-                    Auto-generate quizzes from your materials with multiple question types.
-                    MCQs, true/false, fill-in-blanks with instant feedback and scoring.
+                    Auto-generate quizzes with MCQs, true/false, and fill-in-blanks.
+                    Instant feedback and scoring included.
                 </p>
                 <a href="{% url 'quizzes' %}" class="btn btn-outline">
                     Create Quizzes
@@ -96,10 +136,10 @@
                 </a>
             </div>
 
-            <!-- Flashcards -->
+            <!-- Smart Flashcards -->
             <div class="feature-card">
-                <div class="feature-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="feature-icon feature-icon-sm">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="2" y="4" width="20" height="16" rx="2" />
                         <path d="M7 8h10" />
                         <path d="M7 12h6" />
@@ -107,8 +147,8 @@
                 </div>
                 <h3>Smart Flashcards</h3>
                 <p>
-                    Create flashcards automatically from key concepts. Uses spaced repetition
-                    algorithm to optimize your memory retention and learning efficiency.
+                    Auto-create flashcards from key concepts. Spaced repetition
+                    optimizes your memory retention.
                 </p>
                 <a href="{% url 'flashcards' %}" class="btn btn-outline">
                     Study Flashcards
@@ -120,8 +160,8 @@
 
             <!-- Concept Flowcharts -->
             <div class="feature-card">
-                <div class="feature-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="feature-icon feature-icon-sm">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="5" r="3" />
                         <circle cx="6" cy="19" r="3" />
                         <circle cx="18" cy="19" r="3" />
@@ -132,8 +172,8 @@
                 </div>
                 <h3>Concept Flowcharts</h3>
                 <p>
-                    Visualize complex topics with auto-generated mind maps and flowcharts.
-                    See how concepts connect and build understanding visually.
+                    Visualize topics with auto-generated mind maps. See how
+                    concepts connect and build understanding.
                 </p>
                 <a href="{% url 'flowcharts' %}" class="btn btn-outline">
                     View Flowcharts
@@ -143,10 +183,10 @@
                 </a>
             </div>
 
-            <!-- AI Podcast Generator -->
+            <!-- AI Podcast -->
             <div class="feature-card">
-                <div class="feature-icon" style="background: linear-gradient(135deg, #a78bfa, #7c3aed); color: white;">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="feature-icon feature-icon-sm feature-icon-podcast">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
                         <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
                         <line x1="12" y1="19" x2="12" y2="23" />
@@ -155,8 +195,8 @@
                 </div>
                 <h3>AI Podcast</h3>
                 <p>
-                    Generate engaging audio podcasts from your materials. Two AI hosts discuss
-                    your topics at beginner, intermediate, or advanced levels.
+                    Generate audio podcasts from your materials. Two AI hosts discuss
+                    your topics at any difficulty level.
                 </p>
                 <a href="{% url 'podcasts' %}" class="btn btn-outline">
                     Create Podcast
@@ -168,16 +208,16 @@
 
             <!-- Answer Evaluation -->
             <div class="feature-card">
-                <div class="feature-icon feature-icon-evaluation">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="feature-icon feature-icon-sm feature-icon-evaluation">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 11l3 3L22 4" />
                         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                     </svg>
                 </div>
                 <h3>Answer Evaluation</h3>
                 <p>
-                    Upload handwritten answer sheets and get AI-powered evaluation with
-                    percentage scores per question and detailed feedback.
+                    Upload handwritten answer sheets for AI-powered evaluation
+                    with per-question scores and feedback.
                 </p>
                 <a href="{% url 'evaluations' %}" class="btn btn-outline">
                     Evaluate Answers
@@ -189,8 +229,8 @@
 
             <!-- Progress Analytics -->
             <div class="feature-card">
-                <div class="feature-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="feature-icon feature-icon-sm">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="20" x2="18" y2="10" />
                         <line x1="12" y1="20" x2="12" y2="4" />
                         <line x1="6" y1="20" x2="6" y2="14" />
@@ -198,8 +238,8 @@
                 </div>
                 <h3>Progress Analytics</h3>
                 <p>
-                    Track your learning journey with detailed analytics. See quiz scores,
-                    flashcard retention rates, and identify areas needing more focus.
+                    Track your learning journey with detailed analytics. Quiz scores,
+                    retention rates, and focus areas.
                 </p>
                 <a href="{% url 'analytics' %}" class="btn btn-outline">
                     View Analytics
@@ -232,57 +272,176 @@
 
 {% block extra_css %}
 <style>
-    /* Primary Feature Card Styling */
-    .feature-card-primary {
-        position: relative;
-        background: linear-gradient(135deg, rgba(0, 217, 192, 0.1) 0%, rgba(0, 143, 122, 0.05) 100%) !important;
-        border: 2px solid var(--accent-primary) !important;
-        grid-column: span 2;
+    /* ==================================
+       HERO FEATURES — Top-Tier Row
+       ================================== */
+    .hero-features {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.75rem;
+        margin-bottom: 2.5rem;
     }
 
-    .feature-card-primary::before {
+    .feature-hero {
+        position: relative;
+        background: linear-gradient(145deg, rgba(0, 217, 192, 0.08) 0%, rgba(0, 143, 122, 0.03) 100%) !important;
+        border: 1.5px solid rgba(0, 217, 192, 0.25) !important;
+        padding: 2.25rem 2.5rem !important;
+    }
+
+    .feature-hero::before {
         content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        inset: 0;
         background: var(--gradient-primary);
-        opacity: 0.03;
+        opacity: 0.02;
         border-radius: inherit;
         pointer-events: none;
     }
 
+    .feature-hero:hover {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 8px 40px rgba(0, 217, 192, 0.12), 0 0 60px rgba(0, 217, 192, 0.06);
+    }
+
+    .feature-hero-top {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .feature-hero .feature-icon {
+        width: 52px;
+        height: 52px;
+        margin-bottom: 0;
+        border-radius: var(--radius-sm);
+    }
+
+    .feature-hero h3 {
+        font-size: 1.35rem;
+        margin-bottom: 0;
+    }
+
+    .feature-hero p {
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    /* Chatbot hero variant — slightly different accent */
+    .feature-hero-chat {
+        background: linear-gradient(145deg, rgba(0, 180, 216, 0.08) 0%, rgba(0, 217, 192, 0.03) 100%) !important;
+        border-color: rgba(0, 180, 216, 0.25) !important;
+    }
+
+    .feature-hero-chat:hover {
+        border-color: #00b4d8 !important;
+        box-shadow: 0 8px 40px rgba(0, 180, 216, 0.12), 0 0 60px rgba(0, 180, 216, 0.06);
+    }
+
+    .feature-icon-chat {
+        background: linear-gradient(135deg, #00d9c0, #00b4d8) !important;
+        color: var(--bg-primary) !important;
+    }
+
+    /* Badges */
     .feature-badge {
         position: absolute;
-        top: 1rem;
-        right: 1rem;
+        top: 1.25rem;
+        right: 1.25rem;
         background: var(--gradient-primary);
         color: var(--bg-primary);
-        padding: 0.375rem 0.875rem;
-        border-radius: var(--radius-sm);
-        font-size: 0.75rem;
-        font-weight: 600;
+        padding: 0.3rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.68rem;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
     }
 
-    .feature-card-primary .feature-icon {
-        background: var(--gradient-primary);
-        color: var(--bg-primary);
+    .feature-badge-new {
+        background: linear-gradient(135deg, #00b4d8, #00d9c0);
     }
 
-    .feature-card-primary h3 {
-        font-size: 1.5rem;
+    /* ==================================
+       DIVIDER between tiers
+       ================================== */
+    .features-divider {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
     }
 
-    .feature-card-primary p {
+    .features-divider::before,
+    .features-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+    }
+
+    .features-divider span {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* ==================================
+       SECONDARY FEATURES — 3-Column Grid
+       ================================== */
+    .features-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    .features-grid .feature-card {
+        padding: 2rem !important;
+    }
+
+    .feature-icon-sm {
+        width: 50px;
+        height: 50px;
         font-size: 1rem;
     }
 
+    .features-grid .feature-card h3 {
+        font-size: 1.15rem;
+    }
+
+    .features-grid .feature-card p {
+        font-size: 0.88rem;
+        line-height: 1.6;
+    }
+
+    /* Podcast icon variant */
+    .feature-icon-podcast {
+        background: linear-gradient(135deg, #a78bfa, #7c3aed) !important;
+        color: white !important;
+    }
+
+    /* ==================================
+       MOBILE RESPONSIVE
+       ================================== */
+    @media (max-width: 900px) {
+        .features-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+    }
+
     @media (max-width: 768px) {
-        .feature-card-primary {
-            grid-column: span 1;
+        .hero-features {
+            grid-template-columns: 1fr;
+        }
+
+        .features-grid {
+            grid-template-columns: 1fr !important;
+        }
+
+        .feature-hero {
+            padding: 1.75rem !important;
         }
     }
 </style>

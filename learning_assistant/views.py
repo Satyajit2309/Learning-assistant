@@ -14,7 +14,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.utils import timezone
 
-from .models import Document, Summary, Quiz, QuizQuestion, FlashcardSet, Flashcard, Flowchart, FlowchartNode, FlowchartEdge, AnswerSheetEvaluation, EvaluatedQuestion, Podcast
+from .models import Document, Summary, Quiz, QuizQuestion, FlashcardSet, Flashcard, Flowchart, FlowchartNode, FlowchartEdge, AnswerSheetEvaluation, EvaluatedQuestion, Podcast, ChatSession, ChatMessage
 from .services import DocumentProcessor, VectorStoreService
 from .agents import get_agent
 
@@ -843,13 +843,180 @@ def view_flowchart(request, flowchart_id):
 
 # ========== Other Feature Placeholders ==========
 
+@login_required
 def analytics(request):
-    """Progress analytics dashboard"""
-    context = {
-        'title': 'Progress Analytics',
-        'description': 'Track your learning journey with detailed analytics and identify areas needing focus.'
+    """
+    Progress analytics dashboard.
+    
+    Aggregates data across all features to give the user
+    a comprehensive view of their learning journey.
+    """
+    from django.db.models import Avg, Count, Sum, Q
+    from django.db.models.functions import TruncDate
+    import json as json_lib
+    from datetime import timedelta
+    
+    user = request.user
+    profile = user.profile
+    
+    # ── Overview Stats ──
+    total_documents = Document.objects.filter(user=user).count()
+    total_summaries = Summary.objects.filter(document__user=user).count()
+    total_quizzes = Quiz.objects.filter(user=user, is_completed=True).count()
+    total_flashcard_sets = FlashcardSet.objects.filter(document__user=user).count()
+    total_flowcharts = Flowchart.objects.filter(document__user=user).count()
+    total_podcasts = Podcast.objects.filter(document__user=user).count()
+    total_evaluations = AnswerSheetEvaluation.objects.filter(user=user, is_evaluated=True).count()
+    total_chats = ChatSession.objects.filter(user=user).count()
+    
+    # ── Quiz Performance ──
+    completed_quizzes = Quiz.objects.filter(
+        user=user, is_completed=True
+    ).order_by('completed_at')
+    
+    quiz_scores = []
+    quiz_labels = []
+    quiz_difficulties = {'easy': 0, 'medium': 0, 'hard': 0}
+    
+    for q in completed_quizzes:
+        pct = q.percentage_score
+        quiz_scores.append(pct)
+        label = q.completed_at.strftime('%b %d') if q.completed_at else q.created_at.strftime('%b %d')
+        quiz_labels.append(label)
+        if q.difficulty in quiz_difficulties:
+            quiz_difficulties[q.difficulty] += 1
+    
+    avg_quiz_score = round(sum(quiz_scores) / len(quiz_scores), 1) if quiz_scores else 0
+    
+    # ── Flashcard Mastery ──
+    flashcard_sets_data = FlashcardSet.objects.filter(
+        document__user=user
+    ).annotate(
+        total_cards=Count('cards'),
+        mastered_cards=Count('cards', filter=Q(cards__is_mastered=True)),
+    )
+    
+    fc_names = []
+    fc_mastered = []
+    fc_remaining = []
+    total_cards_all = 0
+    total_mastered_all = 0
+    
+    for fs in flashcard_sets_data:
+        title = fs.title[:20] + '...' if len(fs.title) > 20 else fs.title
+        fc_names.append(title)
+        fc_mastered.append(fs.mastered_cards)
+        fc_remaining.append(fs.total_cards - fs.mastered_cards)
+        total_cards_all += fs.total_cards
+        total_mastered_all += fs.mastered_cards
+    
+    flashcard_mastery_pct = round((total_mastered_all / total_cards_all) * 100, 1) if total_cards_all > 0 else 0
+    
+    # ── Evaluation Scores ──
+    evaluations_data = AnswerSheetEvaluation.objects.filter(
+        user=user, is_evaluated=True
+    ).order_by('created_at')
+    
+    eval_scores = []
+    eval_labels = []
+    for ev in evaluations_data:
+        score = ev.overall_score if hasattr(ev, 'overall_score') and ev.overall_score else 0
+        eval_scores.append(round(score, 1))
+        eval_labels.append(ev.created_at.strftime('%b %d'))
+    
+    avg_eval_score = round(sum(eval_scores) / len(eval_scores), 1) if eval_scores else 0
+    
+    # ── Activity over last 30 days ──
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    
+    # Quizzes per day
+    quiz_activity = (
+        Quiz.objects.filter(user=user, created_at__gte=thirty_days_ago)
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(count=Count('id'))
+        .order_by('day')
+    )
+    
+    # Documents per day
+    doc_activity = (
+        Document.objects.filter(user=user, created_at__gte=thirty_days_ago)
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(count=Count('id'))
+        .order_by('day')
+    )
+    
+    # Build a 30-day timeline
+    activity_labels = []
+    activity_quiz_counts = []
+    activity_doc_counts = []
+    
+    quiz_by_day = {item['day']: item['count'] for item in quiz_activity}
+    doc_by_day = {item['day']: item['count'] for item in doc_activity}
+    
+    for i in range(30):
+        day = (timezone.now() - timedelta(days=29 - i)).date()
+        activity_labels.append(day.strftime('%b %d'))
+        activity_quiz_counts.append(quiz_by_day.get(day, 0))
+        activity_doc_counts.append(doc_by_day.get(day, 0))
+    
+    # ── Feature Usage Breakdown ──
+    feature_usage = {
+        'Summaries': total_summaries,
+        'Quizzes': total_quizzes,
+        'Flashcards': total_flashcard_sets,
+        'Flowcharts': total_flowcharts,
+        'Podcasts': total_podcasts,
+        'Evaluations': total_evaluations,
+        'Chat Sessions': total_chats,
     }
-    return render(request, 'pages/placeholder.html', context)
+    
+    # ── XP & Level ──
+    xp_for_next = ((profile.level) * 1000) - profile.xp_points
+    xp_progress_pct = round((profile.xp_points % 1000) / 10, 1)
+    
+    context = {
+        # Overview
+        'total_documents': total_documents,
+        'total_quizzes': total_quizzes,
+        'total_flashcard_sets': total_flashcard_sets,
+        'total_evaluations': total_evaluations,
+        'total_chats': total_chats,
+        
+        # Profile stats
+        'profile': profile,
+        'xp_for_next': max(xp_for_next, 0),
+        'xp_progress_pct': xp_progress_pct,
+        
+        # Quiz charts (JSON)
+        'quiz_scores_json': json_lib.dumps(quiz_scores),
+        'quiz_labels_json': json_lib.dumps(quiz_labels),
+        'quiz_difficulties_json': json_lib.dumps(quiz_difficulties),
+        'avg_quiz_score': avg_quiz_score,
+        
+        # Flashcard charts (JSON)
+        'fc_names_json': json_lib.dumps(fc_names),
+        'fc_mastered_json': json_lib.dumps(fc_mastered),
+        'fc_remaining_json': json_lib.dumps(fc_remaining),
+        'flashcard_mastery_pct': flashcard_mastery_pct,
+        'total_cards_all': total_cards_all,
+        'total_mastered_all': total_mastered_all,
+        
+        # Evaluation charts (JSON)
+        'eval_scores_json': json_lib.dumps(eval_scores),
+        'eval_labels_json': json_lib.dumps(eval_labels),
+        'avg_eval_score': avg_eval_score,
+        
+        # Activity timeline (JSON)
+        'activity_labels_json': json_lib.dumps(activity_labels),
+        'activity_quiz_json': json_lib.dumps(activity_quiz_counts),
+        'activity_doc_json': json_lib.dumps(activity_doc_counts),
+        
+        # Feature usage (JSON)
+        'feature_usage_json': json_lib.dumps(feature_usage),
+    }
+    return render(request, 'pages/analytics.html', context)
 
 
 # ========== Answer Sheet Evaluation Views ==========
@@ -1316,3 +1483,276 @@ def view_podcast(request, podcast_id):
         'script_lines': script_lines,
     }
     return render(request, 'pages/view_podcast.html', context)
+
+
+# ========== RAG Chatbot Views ==========
+
+
+@login_required
+def chatbot(request):
+    """Chatbot hub - main page with document selector and chat sessions."""
+    # Get user's uploaded documents for the document selector dropdown
+    documents = Document.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Get user's existing chat sessions for the sidebar
+    chat_sessions = ChatSession.objects.filter(
+        user=request.user
+    ).select_related('document').order_by('-updated_at')[:20]
+    
+    context = {
+        'documents': documents,
+        'chat_sessions': chat_sessions,
+        'active_session': None,
+        'messages': [],
+    }
+    return render(request, 'pages/chatbot.html', context)
+
+
+@login_required
+def chatbot_session(request, session_id):
+    """Load a specific chat session with its full message history."""
+    # Get the requested session (must belong to the current user)
+    session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+    
+    # Get all messages in this session, ordered chronologically
+    session_messages = session.messages.all().order_by('created_at')
+    
+    # Get all user data for sidebar and document selector
+    documents = Document.objects.filter(user=request.user).order_by('-created_at')
+    chat_sessions = ChatSession.objects.filter(
+        user=request.user
+    ).select_related('document').order_by('-updated_at')[:20]
+    
+    context = {
+        'documents': documents,
+        'chat_sessions': chat_sessions,
+        'active_session': session,
+        'messages': session_messages,
+    }
+    return render(request, 'pages/chatbot.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def create_chat_session(request):
+    """Create a new chat session for a selected document via AJAX."""
+    try:
+        data = json.loads(request.body)
+        document_id = data.get('document_id')
+        
+        if not document_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'Please select a document to chat with.'
+            }, status=400)
+        
+        # Verify the document belongs to the current user
+        document = get_object_or_404(Document, id=document_id, user=request.user)
+        
+        # Check that the document has extracted text to chat about
+        if not document.extracted_text:
+            return JsonResponse({
+                'success': False,
+                'error': 'This document has no extracted text. Please re-upload it.'
+            }, status=400)
+        
+        # Create a new chat session
+        session = ChatSession.objects.create(
+            user=request.user,
+            document=document,
+            title=f"Chat: {document.title[:50]}",
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'session': {
+                'id': str(session.id),
+                'title': session.title,
+                'document_title': document.title,
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid request data.'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def send_chat_message(request):
+    """
+    Send a message in a chat session via AJAX.
+    
+    Flow:
+    1. Save the user's message
+    2. Retrieve relevant context from the document (via vector store or raw text)
+    3. Build chat history from previous messages
+    4. Call the ChatbotAgent to generate a response
+    5. Save the assistant's response
+    6. Return the response to the frontend
+    """
+    try:
+        data = json.loads(request.body)
+        session_id = data.get('session_id')
+        user_message = data.get('message', '').strip()
+        
+        # Validate inputs
+        if not session_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'Session ID is required.'
+            }, status=400)
+        
+        if not user_message:
+            return JsonResponse({
+                'success': False,
+                'error': 'Message cannot be empty.'
+            }, status=400)
+        
+        # Get the chat session
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+        document = session.document
+        
+        # Check if API key is configured
+        if not settings.GEMINI_API_KEY:
+            return JsonResponse({
+                'success': False,
+                'error': 'AI features not configured. Please set GEMINI_API_KEY.'
+            }, status=500)
+        
+        # Step 1: Save the user's message
+        user_msg = ChatMessage.objects.create(
+            session=session,
+            role='user',
+            content=user_message,
+        )
+        
+        # Step 2: Retrieve relevant context from the document
+        # We use FAISS semantic search for accurate retrieval.
+        # If the document hasn't been indexed yet, index it now (lazy indexing).
+        context = ""
+        vector_service = VectorStoreService()
+        
+        # Lazy indexing: auto-index the document if it hasn't been indexed yet
+        if not vector_service.document_exists(document.vector_doc_id):
+            if document.extracted_text:
+                index_result = vector_service.add_document(
+                    document.vector_doc_id,
+                    document.extracted_text
+                )
+                if index_result['success']:
+                    document.is_indexed = True
+                    document.chunk_count = index_result['chunk_count']
+                    document.save(update_fields=['is_indexed', 'chunk_count'])
+        
+        # Now try semantic search (should work after indexing)
+        if vector_service.document_exists(document.vector_doc_id):
+            search_result = vector_service.search(
+                document.vector_doc_id,
+                user_message,
+                top_k=5
+            )
+            if search_result['success'] and search_result['chunks']:
+                context = "\n\n---\n\n".join(search_result['chunks'])
+        
+        # Ultimate fallback: use raw text if indexing failed or no results found
+        if not context:
+            raw_text = document.extracted_text
+            MAX_CONTEXT_CHARS = 8000
+            if len(raw_text) > MAX_CONTEXT_CHARS:
+                context = raw_text[:MAX_CONTEXT_CHARS] + "\n\n[... Document truncated ...]"
+            else:
+                context = raw_text
+
+        
+        # Step 3: Build chat history from previous messages in this session
+        previous_messages = session.messages.exclude(
+            id=user_msg.id
+        ).order_by('created_at').values('role', 'content')
+        
+        chat_history = list(previous_messages)
+        
+        # Step 4: Call the ChatbotAgent
+        try:
+            agent = get_agent('chatbot')
+            result = agent.generate_sync(
+                context,
+                user_message=user_message,
+                chat_history=chat_history,
+            )
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            return JsonResponse({
+                'success': False,
+                'error': f'AI generation failed: {str(e)}'
+            }, status=500)
+        
+        if not result.get('success'):
+            return JsonResponse({
+                'success': False,
+                'error': result.get('error', 'Failed to generate response.')
+            }, status=500)
+        
+        # Step 5: Save the assistant's response
+        assistant_msg = ChatMessage.objects.create(
+            session=session,
+            role='assistant',
+            content=result['response'],
+            sources_used=result.get('sources_used', False),
+        )
+        
+        # Update session metadata
+        session.message_count = session.messages.count()
+        
+        # Auto-title the session from the first user message
+        if session.message_count <= 2 and session.title.startswith('Chat:'):
+            # Use the first ~50 chars of the first question as the title
+            session.title = user_message[:50] + ('...' if len(user_message) > 50 else '')
+        
+        session.save()
+        
+        # Step 6: Return the response
+        return JsonResponse({
+            'success': True,
+            'response': {
+                'id': str(assistant_msg.id),
+                'content': assistant_msg.content,
+                'sources_used': assistant_msg.sources_used,
+                'session_title': session.title,
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid request data.'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["POST", "DELETE"])
+def delete_chat_session(request, session_id):
+    """Delete a chat session and all its messages via AJAX."""
+    try:
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+        session.delete()
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

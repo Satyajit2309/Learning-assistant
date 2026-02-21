@@ -1,0 +1,609 @@
+{% extends 'base.html' %}
+
+{% block title %}Progress Analytics - LearnAI{% endblock %}
+
+{% block content %}
+<section class="analytics-page">
+    <div class="container">
+
+        <!-- ===== Page Header ===== -->
+        <div class="analytics-header">
+            <div>
+                <h1>Progress <span class="text-gradient">Analytics</span></h1>
+                <p class="analytics-subtitle">Your learning journey at a glance</p>
+            </div>
+        </div>
+
+        <!-- ===== XP & Level Bar ===== -->
+        <div class="xp-banner">
+            <div class="xp-info">
+                <div class="xp-level">
+                    <span class="level-badge">Lvl {{ profile.level }}</span>
+                    <span class="xp-text">{{ profile.xp_points }} XP</span>
+                </div>
+                <span class="xp-next">{{ xp_for_next }} XP to next level</span>
+            </div>
+            <div class="xp-bar-track">
+                <div class="xp-bar-fill" style="width: {{ xp_progress_pct }}%"></div>
+            </div>
+            <div class="xp-meta">
+                <div class="xp-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                    {{ profile.streak_days }} day streak
+                </div>
+                <div class="xp-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20V10M18 20V4M6 20v-4" />
+                    </svg>
+                    Best: {{ profile.longest_streak }} days
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Stat Cards ===== -->
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14,2 14,8 20,8" />
+                    </svg>
+                </div>
+                <div class="stat-value">{{ total_documents }}</div>
+                <div class="stat-label">Documents</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-quiz">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                </div>
+                <div class="stat-value">{{ total_quizzes }}</div>
+                <div class="stat-label">Quizzes Taken</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-fc">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="4" width="20" height="16" rx="2" />
+                        <path d="M7 8h10" />
+                        <path d="M7 12h6" />
+                    </svg>
+                </div>
+                <div class="stat-value">{{ total_flashcard_sets }}</div>
+                <div class="stat-label">Flashcard Sets</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-eval">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 11l3 3L22 4" />
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                    </svg>
+                </div>
+                <div class="stat-value">{{ total_evaluations }}</div>
+                <div class="stat-label">Evaluations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-chat">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                </div>
+                <div class="stat-value">{{ total_chats }}</div>
+                <div class="stat-label">Chat Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-acc">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                    </svg>
+                </div>
+                <div class="stat-value">{{ profile.accuracy_percentage }}%</div>
+                <div class="stat-label">Quiz Accuracy</div>
+            </div>
+        </div>
+
+        <!-- ===== Charts Row 1: Activity Timeline (full width) ===== -->
+        <div class="chart-section">
+            <div class="chart-card chart-full">
+                <div class="chart-card-header">
+                    <h3>30-Day Activity</h3>
+                    <span class="chart-badge">Last 30 days</span>
+                </div>
+                <div class="chart-wrapper"><canvas id="activityChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- ===== Charts Row 2: Quiz Score Trend + Quiz Difficulty ===== -->
+        <div class="chart-section chart-section-2col">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3>Quiz Score Trend</h3>
+                    <span class="chart-avg">Avg: {{ avg_quiz_score }}%</span>
+                </div>
+                <div class="chart-wrapper"><canvas id="quizScoreChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3>Quiz Difficulty Mix</h3>
+                </div>
+                <div class="chart-wrapper chart-wrapper-sm"><canvas id="quizDifficultyChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- ===== Charts Row 3: Flashcard Mastery + Feature Usage ===== -->
+        <div class="chart-section chart-section-2col">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3>Flashcard Mastery</h3>
+                    <span class="chart-avg">{{ flashcard_mastery_pct }}% mastered</span>
+                </div>
+                <div class="chart-wrapper"><canvas id="flashcardChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3>Feature Usage</h3>
+                </div>
+                <div class="chart-wrapper chart-wrapper-sm"><canvas id="featureUsageChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- ===== Charts Row 4: Evaluation Scores (full width) ===== -->
+        {% if eval_scores_json != '[]' %}
+        <div class="chart-section">
+            <div class="chart-card chart-full">
+                <div class="chart-card-header">
+                    <h3>Evaluation Scores</h3>
+                    <span class="chart-avg">Avg: {{ avg_eval_score }}%</span>
+                </div>
+                <div class="chart-wrapper"><canvas id="evalChart"></canvas></div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analytics-page {
+        padding: 2rem 0 4rem;
+        margin-top: 80px;
+    }
+
+    .analytics-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .analytics-header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .analytics-subtitle {
+        color: var(--text-muted);
+        font-size: 1rem;
+    }
+
+    /* XP Banner */
+    .xp-banner {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem 2rem;
+        margin-bottom: 2rem;
+        backdrop-filter: var(--glass-blur);
+    }
+
+    .xp-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+
+    .xp-level {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .level-badge {
+        background: var(--gradient-primary);
+        color: var(--bg-primary);
+        padding: 0.3rem 0.85rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .xp-text {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .xp-next {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .xp-bar-track {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .xp-bar-fill {
+        height: 100%;
+        background: var(--gradient-primary);
+        border-radius: 4px;
+        transition: width 1s ease;
+    }
+
+    .xp-meta {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 0.75rem;
+    }
+
+    .xp-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+    }
+
+    .xp-meta-item svg {
+        color: var(--accent-primary);
+    }
+
+    /* Stat Cards */
+    .stat-cards {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        padding: 1.25rem 1rem;
+        text-align: center;
+        backdrop-filter: var(--glass-blur);
+        transition: all var(--transition-normal);
+    }
+
+    .stat-card:hover {
+        border-color: var(--accent-primary);
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-glow);
+    }
+
+    .stat-icon {
+        width: 44px;
+        height: 44px;
+        margin: 0 auto 0.75rem;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(0, 217, 192, 0.15), rgba(0, 217, 192, 0.05));
+        color: var(--accent-primary);
+    }
+
+    .stat-icon-quiz {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.05));
+        color: #818cf8;
+    }
+
+    .stat-icon-fc {
+        background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(251, 191, 36, 0.05));
+        color: #fbbf24;
+    }
+
+    .stat-icon-eval {
+        background: linear-gradient(135deg, rgba(52, 211, 153, 0.15), rgba(52, 211, 153, 0.05));
+        color: #34d399;
+    }
+
+    .stat-icon-chat {
+        background: linear-gradient(135deg, rgba(0, 180, 216, 0.15), rgba(0, 180, 216, 0.05));
+        color: #00b4d8;
+    }
+
+    .stat-icon-acc {
+        background: linear-gradient(135deg, rgba(244, 114, 182, 0.15), rgba(244, 114, 182, 0.05));
+        color: #f472b6;
+    }
+
+    .stat-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.2rem;
+    }
+
+    .stat-label {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 600;
+    }
+
+    /* Chart Sections */
+    .chart-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .chart-section-2col {
+        display: grid;
+        grid-template-columns: 3fr 2fr;
+        gap: 1.5rem;
+    }
+
+    .chart-card {
+        background: var(--gradient-card);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        backdrop-filter: var(--glass-blur);
+    }
+
+    .chart-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .chart-card-header h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .chart-badge {
+        background: rgba(0, 217, 192, 0.1);
+        color: var(--accent-primary);
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.68rem;
+        font-weight: 600;
+    }
+
+    .chart-avg {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    .chart-wrapper {
+        position: relative;
+        height: 260px;
+    }
+
+    .chart-wrapper-sm {
+        height: 240px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+        .stat-cards {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .analytics-page {
+            padding: 1.5rem 0 3rem;
+        }
+
+        .stat-cards {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .chart-section-2col {
+            grid-template-columns: 1fr;
+        }
+
+        .xp-info {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stat-cards {
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<!-- prettier-ignore -->
+<script>
+    var CHART_DATA = { activityLabels: JSON.parse('{{ activity_labels_json|escapejs }}'), activityQuiz: JSON.parse('{{ activity_quiz_json|escapejs }}'), activityDoc: JSON.parse('{{ activity_doc_json|escapejs }}'), quizScores: JSON.parse('{{ quiz_scores_json|escapejs }}'), quizLabels: JSON.parse('{{ quiz_labels_json|escapejs }}'), quizDifficulties: JSON.parse('{{ quiz_difficulties_json|escapejs }}'), fcNames: JSON.parse('{{ fc_names_json|escapejs }}'), fcMastered: JSON.parse('{{ fc_mastered_json|escapejs }}'), fcRemaining: JSON.parse('{{ fc_remaining_json|escapejs }}'), featureUsage: JSON.parse('{{ feature_usage_json|escapejs }}'), evalScores: JSON.parse('{{ eval_scores_json|escapejs }}'), evalLabels: JSON.parse('{{ eval_labels_json|escapejs }}') };
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var D = CHART_DATA;
+        var gridColor = 'rgba(255,255,255,0.06)';
+        var tickColor = 'rgba(255,255,255,0.4)';
+        Chart.defaults.color = tickColor;
+        Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+        Chart.defaults.font.size = 11;
+
+        /* 1. 30-Day Activity (Stacked Bar) */
+        var activityEl = document.getElementById('activityChart');
+        if (activityEl) {
+            new Chart(activityEl, {
+                type: 'bar',
+                data: {
+                    labels: D.activityLabels,
+                    datasets: [
+                        { label: 'Quizzes', data: D.activityQuiz, backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 4, barPercentage: 0.6 },
+                        { label: 'Documents', data: D.activityDoc, backgroundColor: 'rgba(0,217,192,0.7)', borderRadius: 4, barPercentage: 0.6 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 16 } } },
+                    scales: {
+                        x: { grid: { color: gridColor }, stacked: true, ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 15 } },
+                        y: { grid: { color: gridColor }, stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+        }
+
+        /* 2. Quiz Score Trend (Line) */
+        var quizEl = document.getElementById('quizScoreChart');
+        if (quizEl) {
+            if (D.quizScores.length > 0) {
+                new Chart(quizEl, {
+                    type: 'line',
+                    data: {
+                        labels: D.quizLabels,
+                        datasets: [{
+                            label: 'Score %', data: D.quizScores,
+                            borderColor: '#00d9c0', backgroundColor: 'rgba(0,217,192,0.1)',
+                            fill: true, tension: 0.4, pointBackgroundColor: '#00d9c0',
+                            pointRadius: 4, pointHoverRadius: 6, borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: gridColor }, ticks: { maxRotation: 45, autoSkip: true } },
+                            y: { grid: { color: gridColor }, beginAtZero: true, max: 100, ticks: { callback: function (v) { return v + '%'; } } }
+                        }
+                    }
+                });
+            } else {
+                quizEl.parentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:0.9rem;">No quiz data yet. Take a quiz to see your trend!</div>';
+            }
+        }
+
+        /* 3. Quiz Difficulty Donut */
+        var diffEl = document.getElementById('quizDifficultyChart');
+        if (diffEl) {
+            var diffValues = [D.quizDifficulties.easy, D.quizDifficulties.medium, D.quizDifficulties.hard];
+            var hasData = diffValues.some(function (v) { return v > 0; });
+            if (hasData) {
+                new Chart(diffEl, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Easy', 'Medium', 'Hard'],
+                        datasets: [{ data: diffValues, backgroundColor: ['#34d399', '#fbbf24', '#f87171'], borderWidth: 0, spacing: 3 }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, cutout: '65%',
+                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16 } } }
+                    }
+                });
+            } else {
+                diffEl.parentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:0.9rem;">No quizzes yet</div>';
+            }
+        }
+
+        /* 4. Flashcard Mastery (Stacked Horizontal Bar) */
+        var fcEl = document.getElementById('flashcardChart');
+        if (fcEl) {
+            if (D.fcNames.length > 0) {
+                new Chart(fcEl, {
+                    type: 'bar',
+                    data: {
+                        labels: D.fcNames,
+                        datasets: [
+                            { label: 'Mastered', data: D.fcMastered, backgroundColor: 'rgba(0,217,192,0.75)', borderRadius: 4 },
+                            { label: 'Remaining', data: D.fcRemaining, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                        plugins: { legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 16 } } },
+                        scales: {
+                            x: { grid: { color: gridColor }, stacked: true, beginAtZero: true, ticks: { stepSize: 1 } },
+                            y: { grid: { display: false }, stacked: true }
+                        }
+                    }
+                });
+            } else {
+                fcEl.parentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:0.9rem;">No flashcards yet</div>';
+            }
+        }
+
+        /* 5. Feature Usage (Radar) */
+        var featureEl = document.getElementById('featureUsageChart');
+        if (featureEl) {
+            new Chart(featureEl, {
+                type: 'radar',
+                data: {
+                    labels: Object.keys(D.featureUsage),
+                    datasets: [{
+                        label: 'Usage', data: Object.values(D.featureUsage),
+                        backgroundColor: 'rgba(0,217,192,0.15)', borderColor: '#00d9c0',
+                        borderWidth: 2, pointBackgroundColor: '#00d9c0', pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        r: {
+                            grid: { color: gridColor }, angleLines: { color: gridColor },
+                            pointLabels: { color: tickColor, font: { size: 10 } },
+                            beginAtZero: true, ticks: { display: false, stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        }
+
+        /* 6. Evaluation Scores (Line) */
+        var evalEl = document.getElementById('evalChart');
+        if (evalEl && D.evalScores.length > 0) {
+            new Chart(evalEl, {
+                type: 'line',
+                data: {
+                    labels: D.evalLabels,
+                    datasets: [{
+                        label: 'Score %', data: D.evalScores,
+                        borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.1)',
+                        fill: true, tension: 0.4, pointBackgroundColor: '#34d399',
+                        pointRadius: 5, pointHoverRadius: 7, borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { maxRotation: 45, autoSkip: true } },
+                        y: { grid: { color: gridColor }, beginAtZero: true, max: 100, ticks: { callback: function (v) { return v + '%'; } } }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

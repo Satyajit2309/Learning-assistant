@@ -691,3 +691,87 @@ class Podcast(models.Model):
             return f"{minutes}m {seconds}s"
         return f"{seconds}s"
 
+
+# ========== RAG Chatbot Models ==========
+
+
+class ChatSession(models.Model):
+    """
+    Model for storing chatbot conversation sessions.
+    
+    Each session is tied to a specific user and document.
+    Users can have multiple chat sessions per document,
+    allowing them to explore different topics in separate threads.
+    """
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='chat_sessions'
+    )
+    document = models.ForeignKey(
+        Document,
+        on_delete=models.CASCADE,
+        related_name='chat_sessions'
+    )
+    
+    # Session metadata
+    title = models.CharField(
+        max_length=255,
+        default='New Chat',
+        help_text="Auto-generated from the first user message"
+    )
+    message_count = models.PositiveIntegerField(default=0)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-updated_at']
+        verbose_name = 'Chat Session'
+        verbose_name_plural = 'Chat Sessions'
+    
+    def __str__(self):
+        return f"Chat: {self.title} ({self.document.title})"
+
+
+class ChatMessage(models.Model):
+    """
+    Individual message within a chat session.
+    
+    Stores both user messages and assistant responses.
+    The 'sources_used' flag indicates whether the assistant
+    used document context to generate the response.
+    """
+    
+    ROLE_CHOICES = [
+        ('user', 'User'),
+        ('assistant', 'Assistant'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    session = models.ForeignKey(
+        ChatSession,
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
+    
+    # Message content
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    content = models.TextField()
+    
+    # Whether the assistant used document context for this response
+    sources_used = models.BooleanField(default=False)
+    
+    # Timestamp
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Chat Message'
+        verbose_name_plural = 'Chat Messages'
+    
+    def __str__(self):
+        return f"[{self.role}] {self.content[:50]}..."

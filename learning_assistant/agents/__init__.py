@@ -28,6 +28,7 @@ from .flashcard_agent import FlashcardAgent
 from .flowchart_agent import FlowchartAgent
 from .evaluation_agent import EvaluationAgent
 from .podcast_agent import PodcastAgent
+from .chatbot_agent import ChatbotAgent
 
 __all__ = [
     'BaseAgent',
@@ -40,5 +41,6 @@ __all__ = [
     'FlowchartAgent',
     'EvaluationAgent',
     'PodcastAgent',
+    'ChatbotAgent',
 ]
 

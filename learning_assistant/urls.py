@@ -43,4 +43,11 @@ urlpatterns = [
     path('api/generate-podcast/', views.generate_podcast, name='generate_podcast'),
     path('podcast/<uuid:podcast_id>/download/', views.download_podcast, name='download_podcast'),
     path('podcast/<uuid:podcast_id>/', views.view_podcast, name='view_podcast'),
+    
+    # RAG Chatbot
+    path('chatbot/', views.chatbot, name='chatbot'),
+    path('chatbot/session/<uuid:session_id>/', views.chatbot_session, name='chatbot_session'),
+    path('api/chatbot/new-session/', views.create_chat_session, name='create_chat_session'),
+    path('api/chatbot/send-message/', views.send_chat_message, name='send_chat_message'),
+    path('api/chatbot/session/<uuid:session_id>/delete/', views.delete_chat_session, name='delete_chat_session'),
 ]
