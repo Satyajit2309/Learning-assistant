@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16
+    container_name: learning-assistant-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-learning_assistant_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  web:
+    build: .
+    container_name: learning-assistant-web
+    restart: always
+    ports:
+      - "8001:8000"
+    volumes:
+      - .:/app
+      - media_data:/app/media
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+  media_data:

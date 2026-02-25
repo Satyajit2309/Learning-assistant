@@ -1,0 +1,9 @@
+venv/
+.git/
+__pycache__/
+*.pyc
+.env
+media/
+*.sqlite3
+vector_store/
+.agent/
